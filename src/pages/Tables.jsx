@@ -247,7 +247,7 @@ export default function Tables() {
                           onClick={() => openSeat(t, num)}
                           style={{
                             border: occupant ? '2px solid var(--blue)' : '2px dashed var(--border)',
-                            background: occupant ? 'var(--blue-light)' : '#fafcfe',
+                            background: occupant ? 'var(--blue-light)' : '#fbf7ef',
                             borderRadius: 10,
                             padding: '10px 8px',
                             textAlign: 'center',

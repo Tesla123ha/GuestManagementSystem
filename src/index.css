@@ -1,18 +1,18 @@
 :root {
-  --blue: #4a9fd8;
-  --blue-light: #eaf4fc;
-  --blue-dark: #2f6f9e;
-  --gold: #f2a154;
-  --gold-light: #fdf1e4;
-  --ink: #33404d;
-  --ink-soft: #6b7a89;
-  --bg: #f7f9fb;
-  --white: #ffffff;
-  --border: #e6ebf0;
-  --green: #3fb68b;
-  --red: #e2635a;
+  --blue: #c97b5f;
+  --blue-light: #f4e1d4;
+  --blue-dark: #a25c43;
+  --gold: #d4a373;
+  --gold-light: #f3e5cf;
+  --ink: #3a322b;
+  --ink-soft: #8a7c6c;
+  --bg: #f7f0e6;
+  --white: #fffaf3;
+  --border: #e3d5c2;
+  --green: #7ba98a;
+  --red: #c65b4e;
   --radius: 14px;
-  --shadow: 0 2px 10px rgba(44, 62, 80, 0.06);
+  --shadow: 0 2px 10px rgba(58, 50, 43, 0.08);
 }
 
 * {
@@ -122,7 +122,7 @@ a {
 }
 
 .sidebar-link:hover {
-  background: #f2f6f9;
+  background: #f3e9dc;
 }
 
 .sidebar-link.active {
@@ -258,7 +258,7 @@ a {
 
 .data-table th {
   text-align: left;
-  background: #f4f8fb;
+  background: #f3ead9;
   padding: 12px 16px;
   font-size: 0.82rem;
   text-transform: uppercase;
@@ -273,7 +273,7 @@ a {
 }
 
 .data-table tr:hover td {
-  background: #fafcfe;
+  background: #fbf6ee;
 }
 
 .badge {
@@ -286,12 +286,12 @@ a {
 
 .badge-waiting {
   background: var(--gold-light);
-  color: #a86326;
+  color: #a2632f;
 }
 
 .badge-assigned {
-  background: #e7f7f1;
-  color: #227a5b;
+  background: #e6efe6;
+  color: #3f6b4f;
 }
 
 .search-input {
@@ -312,7 +312,7 @@ a {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(51, 64, 77, 0.35);
+  background: rgba(58, 50, 43, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,12 +320,12 @@ a {
 }
 
 .modal-box {
-  background: white;
+  background: var(--white);
   border-radius: var(--radius);
   padding: 28px;
   width: 380px;
   max-width: 90vw;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 40px rgba(58, 50, 43, 0.2);
 }
 
 .modal-actions {
@@ -475,13 +475,13 @@ a {
 
 .table-shape.full {
   border-color: var(--ink-soft);
-  background: #eef1f3;
+  background: #ebe2d3;
 }
 
 .table-shape.mine {
   border-color: var(--gold);
   background: var(--gold-light);
-  box-shadow: 0 0 0 5px rgba(242, 161, 84, 0.18);
+  box-shadow: 0 0 0 5px rgba(212, 163, 115, 0.25);
 }
 
 .table-shape .table-num {
@@ -502,18 +502,18 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, #fdf1e4 0%, #eaf4fc 55%, #dcecf8 100%);
+  background: linear-gradient(160deg, #f8efdf 0%, #f1e2cb 55%, #e6c9a8 100%);
   padding: 24px;
 }
 
 .guest-card {
-  background: white;
+  background: var(--white);
   border-radius: 22px;
   padding: 40px 32px;
   width: 100%;
   max-width: 380px;
   text-align: center;
-  box-shadow: 0 12px 40px rgba(47, 111, 158, 0.14);
+  box-shadow: 0 12px 40px rgba(162, 92, 67, 0.18);
 }
 
 .guest-card h1 {
