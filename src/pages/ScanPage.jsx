@@ -13,6 +13,7 @@ import {
   arrayUnion,
   serverTimestamp,
 } from 'firebase/firestore';
+import { Heart } from 'lucide-react';
 import { db } from '../firebase';
 import FloorPlan from './FloorPlan';
 
@@ -166,7 +167,7 @@ export default function ScanPage() {
     return (
       <div className="guest-screen">
         <form className="guest-card" onSubmit={handleSubmit}>
-          <div className="eyebrow-dot">🎉</div>
+          <div className="eyebrow-dot"><Heart size={20} /></div>
           <h1>Welcome to {eventName}!</h1>
           <p>{welcomeMessage || DEFAULT_WELCOME_MESSAGE}</p>
           <div className="field" style={{ marginTop: 20, textAlign: 'left' }}>
@@ -186,7 +187,7 @@ export default function ScanPage() {
     return (
       <div className="guest-screen">
         <div className="guest-card">
-          <div className="eyebrow-dot">🎈</div>
+          <div className="eyebrow-dot"><Heart size={20} /></div>
           <h1>Thanks, {checkin.fullName}!</h1>
           <p>{waitingMessage || DEFAULT_WAITING_MESSAGE}</p>
           <div className="line-number">#{queuePosition || checkin.scanOrder}</div>
@@ -202,7 +203,7 @@ export default function ScanPage() {
     <div className="guest-screen" style={{ alignItems: 'flex-start', paddingTop: 40 }}>
       <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
         <div className="guest-card" style={{ maxWidth: 'none', marginBottom: 24 }}>
-          <div className="eyebrow-dot">🥳</div>
+          <div className="eyebrow-dot"><Heart size={20} /></div>
           <h1>Welcome, {checkin.fullName}!</h1>
           <p>
             {seatedMessage

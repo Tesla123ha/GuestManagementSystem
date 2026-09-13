@@ -41,23 +41,40 @@ export default function GuestList() {
     };
   }, []);
 
-  // Splits pasted text on new lines OR commas, trims blanks, and drops empty entries
+  // Splits pasted text on new lines OR commas, trims blanks, and drops empty entries.
+  // If a line ends with "- Table 5" (or just "- 5"), that becomes the guest's table number.
   function parseNames(text) {
     return text
       .split(/[\n,]/)
-      .map((n) => n.trim())
-      .filter((n) => n.length > 0);
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        const match = line.match(/^(.*?)\s*-\s*(?:table\s*#?\s*)?(\d+)\s*$/i);
+        if (match) {
+          return { name: match[1].trim(), tableNumber: parseInt(match[2], 10) };
+        }
+        return { name: line, tableNumber: null };
+      })
+      .filter((entry) => entry.name.length > 0);
   }
 
   async function handleAddPasted() {
-    const names = parseNames(pasteText);
-    if (names.length === 0) return;
+    const parsed = parseNames(pasteText);
+    if (parsed.length === 0) return;
     setAdding(true);
     try {
       const batch = writeBatch(db);
-      names.forEach((name) => {
+      parsed.forEach(({ name, tableNumber }) => {
         const ref = doc(collection(db, 'guestList'));
-        batch.set(ref, { fullName: name, addedAt: serverTimestamp() });
+        const data = { fullName: name, addedAt: serverTimestamp() };
+        if (tableNumber !== null) {
+          const table = tables.find((t) => t.tableNumber === tableNumber);
+          if (table) {
+            data.assignedTableId = table.id;
+            data.assignedTableNumber = table.tableNumber;
+          }
+        }
+        batch.set(ref, data);
       });
       await batch.commit();
       setPasteText('');
@@ -150,11 +167,13 @@ export default function GuestList() {
         <p style={{ color: 'var(--ink-soft)', marginTop: 0, marginBottom: 12 }}>
           Copy a list of names from anywhere (a spreadsheet, a note, a message) and paste it below.
           Each name on its own line, or separated by commas, will be added as a separate guest.
+          To seat someone right away, add a dash and the table number after their name, like
+          "Juan Dela Cruz - Table 5". The table must already exist in Tables.
         </p>
         <textarea
           value={pasteText}
           onChange={(e) => setPasteText(e.target.value)}
-          placeholder={'Juan Dela Cruz\nMaria Santos\nPedro Reyes'}
+          placeholder={'Juan Dela Cruz\nMaria Santos - Table 5\nPedro Reyes'}
           rows={5}
           style={{
             width: '100%',

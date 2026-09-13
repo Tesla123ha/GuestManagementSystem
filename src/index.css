@@ -1,14 +1,14 @@
 :root {
-  --blue: #c97b5f;
-  --blue-light: #f4e1d4;
-  --blue-dark: #a25c43;
-  --gold: #d4a373;
-  --gold-light: #f3e5cf;
-  --ink: #3a322b;
+  --blue: #9c2b45;
+  --blue-light: #f6e4e8;
+  --blue-dark: #6e1f34;
+  --gold: #b98d3e;
+  --gold-light: #f4ecd8;
+  --ink: #3a2e22;
   --ink-soft: #8a7c6c;
-  --bg: #f7f0e6;
-  --white: #fffaf3;
-  --border: #e3d5c2;
+  --bg: #faf3e8;
+  --white: #fffbf4;
+  --border: #e8d9c2;
   --green: #7ba98a;
   --red: #c65b4e;
   --radius: 14px;
@@ -683,6 +683,7 @@ a {
   height: 46px;
   border-radius: 50%;
   background: var(--gold-light);
+  color: var(--blue);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -29,7 +29,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   return (
     <aside className={'sidebar' + (isOpen ? ' open' : '') + (isCollapsed ? ' collapsed' : '')}>
       <div className="sidebar-top">
-        <div className="sidebar-title">Party Admin</div>
+        <div className="sidebar-title"></div>
         <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">
           <X />
         </button>
