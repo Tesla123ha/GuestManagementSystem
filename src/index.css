@@ -339,11 +339,63 @@ a {
 
 .floor-plan-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 20px;
 }
 
+.floor-plan-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floor-plan-cell.editable {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+}
+
+.floor-plan-grid-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin: 14px 0 20px;
+  flex-wrap: wrap;
+}
+
+.floor-plan-grid-controls label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  gap: 4px;
+}
+
+.floor-plan-grid-controls input {
+  width: 80px;
+}
+
+.floor-plan-unplaced {
+  margin-top: 24px;
+}
+
+.floor-plan-unplaced-label {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+
+.floor-plan-unplaced-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.floor-plan-unplaced-tray .table-shape {
+  width: 110px;
+}
+
 .table-shape {
+  width: 100%;
   aspect-ratio: 1;
   border-radius: 50%;
   border: 3px solid var(--blue);
@@ -354,6 +406,10 @@ a {
   justify-content: center;
   cursor: pointer;
   transition: transform 0.12s ease;
+}
+
+.table-shape.editable {
+  cursor: grab;
 }
 
 .table-shape:hover {
