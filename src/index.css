@@ -655,12 +655,30 @@ a {
 /* ---------- Guest-facing pages ---------- */
 
 .guest-screen {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, #f8efdf 0%, #f1e2cb 55%, #e6c9a8 100%);
   padding: 24px;
+  overflow: hidden;
+}
+
+.guest-screen::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(255, 251, 244, 0.55), rgba(255, 251, 244, 0.55)), url('./assets/syl-invitation-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  filter: blur(20px);
+  transform: scale(1.15);
+  z-index: 0;
+}
+
+.guest-screen > * {
+  position: relative;
+  z-index: 1;
 }
 
 .guest-card {
