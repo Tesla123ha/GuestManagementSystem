@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
 import { db } from '../firebase';
+import FloorPlan from './FloorPlan';
 
 export default function Dashboard() {
   const [checkins, setCheckins] = useState([]);
@@ -52,6 +54,17 @@ export default function Dashboard() {
           {totalGuests - totalAssigned} guest{totalGuests - totalAssigned === 1 ? '' : 's'} still waiting for a table. Head to Check-Ins to assign a seat.
         </div>
       )}
+
+      <div className="card" style={{ marginTop: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Live Floor Plan</h3>
+            <p style={{ color: 'var(--ink-soft)', margin: '4px 0 0' }}>Tap a table to see who is seated there. Updates instantly.</p>
+          </div>
+          <Link to="/floor-plan-admin" className="btn btn-outline">Open Full Floor Plan</Link>
+        </div>
+        <FloorPlan embedded />
+      </div>
     </div>
   );
 }

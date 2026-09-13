@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { Rows3, Columns3, Armchair } from 'lucide-react';
 import { db } from '../firebase';
 
 const DEFAULT_ROWS = 4;
 const DEFAULT_COLS = 4;
 const SETTINGS_DOC_PATH = ['settings', 'floorPlan'];
 
-export default function FloorPlan({ highlightCheckinId }) {
+export default function FloorPlan({ highlightCheckinId, embedded }) {
   const [tables, setTables] = useState([]);
   const [checkins, setCheckins] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -144,7 +145,7 @@ export default function FloorPlan({ highlightCheckinId }) {
 
   return (
     <div>
-      {!highlightCheckinId && (
+      {!highlightCheckinId && !embedded && (
         <div className="page-header">
           <h2>Live Floor Plan</h2>
           <p>Tap a table to see who is seated there. Updates instantly.</p>
@@ -158,25 +159,38 @@ export default function FloorPlan({ highlightCheckinId }) {
 
       {editMode && (
         <div className="floor-plan-grid-controls">
-          <label>
-            Rows
-            <input
-              type="number"
-              min="1"
-              value={rowsInput}
-              onChange={(e) => setRowsInput(e.target.value)}
-            />
-          </label>
-          <label>
-            Columns
-            <input
-              type="number"
-              min="1"
-              value={colsInput}
-              onChange={(e) => setColsInput(e.target.value)}
-            />
-          </label>
-          <button className="btn btn-primary" onClick={saveGridSize}>Save Grid Size</button>
+          <div className="floor-plan-grid-controls-heading">
+            <span className="floor-plan-grid-controls-title">Grid Size</span>
+            <span className="floor-plan-grid-controls-hint">Set how many rows and columns the floor plan has.</span>
+          </div>
+          <div className="floor-plan-grid-controls-fields">
+            <label className="floor-plan-size-field">
+              <span className="floor-plan-size-icon"><Rows3 size={16} /></span>
+              <span className="floor-plan-size-text">
+                <span className="floor-plan-size-label">Rows</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={rowsInput}
+                  onChange={(e) => setRowsInput(e.target.value)}
+                />
+              </span>
+            </label>
+            <span className="floor-plan-size-times">×</span>
+            <label className="floor-plan-size-field">
+              <span className="floor-plan-size-icon"><Columns3 size={16} /></span>
+              <span className="floor-plan-size-text">
+                <span className="floor-plan-size-label">Columns</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={colsInput}
+                  onChange={(e) => setColsInput(e.target.value)}
+                />
+              </span>
+            </label>
+            <button className="btn btn-primary" onClick={saveGridSize}>Save Grid Size</button>
+          </div>
         </div>
       )}
 
@@ -196,7 +210,7 @@ export default function FloorPlan({ highlightCheckinId }) {
                 const table = placedTables.find((t) => t.row === row && t.col === col);
                 return (
                   <div key={`${row}-${col}`} className="floor-plan-cell">
-                    {table ? renderTableShape(table) : null}
+                    {table ? renderTableShape(table) : <span className="floor-plan-cell-dot" />}
                   </div>
                 );
               })
@@ -212,31 +226,38 @@ export default function FloorPlan({ highlightCheckinId }) {
         </>
       ) : (
         <>
-          <div className="floor-plan-scroll">
-            <div
-              className="floor-plan-grid"
-              style={{
-                gridTemplateColumns: `repeat(${gridSize.cols}, minmax(64px, 96px))`,
-                gridTemplateRows: `repeat(${gridSize.rows}, minmax(64px, 96px))`,
-              }}
-            >
-              {Array.from({ length: gridSize.rows }).map((_, row) =>
-                Array.from({ length: gridSize.cols }).map((_, col) => {
-                  const table = placedTables.find((t) => t.row === row && t.col === col);
-                  return (
-                    <div
-                      key={`${row}-${col}`}
-                      className={'floor-plan-cell' + (editMode ? ' editable' : '')}
-                      onDragOver={editMode ? (e) => e.preventDefault() : undefined}
-                      onDrop={editMode ? () => handleDrop(row, col) : undefined}
-                    >
-                      {table ? renderTableShape(table, { draggable: editMode }) : null}
-                    </div>
-                  );
-                })
-              )}
+          <div className="floor-plan-canvas">
+            <div className="floor-plan-scroll">
+              <div
+                className="floor-plan-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${gridSize.cols}, minmax(64px, 96px))`,
+                  gridTemplateRows: `repeat(${gridSize.rows}, minmax(64px, 96px))`,
+                }}
+              >
+                {Array.from({ length: gridSize.rows }).map((_, row) =>
+                  Array.from({ length: gridSize.cols }).map((_, col) => {
+                    const table = placedTables.find((t) => t.row === row && t.col === col);
+                    return (
+                      <div
+                        key={`${row}-${col}`}
+                        className={'floor-plan-cell' + (editMode ? ' editable' : '')}
+                        onDragOver={editMode ? (e) => e.preventDefault() : undefined}
+                        onDrop={editMode ? () => handleDrop(row, col) : undefined}
+                      >
+                        {table ? renderTableShape(table, { draggable: editMode }) : <span className="floor-plan-cell-dot" />}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              {gridSize.cols > 4 && <p className="floor-plan-scroll-hint">Swipe sideways to see the full layout →</p>}
             </div>
-            {gridSize.cols > 4 && <p className="floor-plan-scroll-hint">Swipe sideways to see the full layout →</p>}
+            <div className="floor-plan-legend">
+              <span className="floor-plan-legend-item"><span className="floor-plan-legend-swatch swatch-open" /> Open seats</span>
+              <span className="floor-plan-legend-item"><span className="floor-plan-legend-swatch swatch-full" /> Full table</span>
+              <span className="floor-plan-legend-item"><Armchair size={14} /> {placedTables.length} table{placedTables.length === 1 ? '' : 's'} placed</span>
+            </div>
           </div>
 
           {editMode && unplacedTables.length > 0 && (
