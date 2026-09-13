@@ -144,11 +144,18 @@ a {
 }
 
 .sidebar-title {
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--blue);
+  flex: 1;
+  min-height: 30px;
+  background: none;
+  border: none;
+  border-radius: 8px;
   padding: 0 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sidebar-title:hover {
+  background: #f3e9dc;
 }
 
 /* X button to close the menu, only shows on mobile */
@@ -211,28 +218,6 @@ a {
   padding-top: 14px;
 }
 
-/* Round arrow button on the edge of the sidebar, used to collapse it on desktop */
-.sidebar-collapse-btn {
-  position: absolute;
-  top: 32px;
-  right: -12px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--white);
-  border: 1px solid var(--border);
-  color: var(--ink-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow);
-}
-
-.sidebar-collapse-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
 /* ---------- Desktop: collapsed (icon-only) sidebar ---------- */
 
 @media (min-width: 769px) {
@@ -242,10 +227,6 @@ a {
   }
 
   .sidebar.collapsed .sidebar-label {
-    display: none;
-  }
-
-  .sidebar.collapsed .sidebar-title {
     display: none;
   }
 
@@ -284,10 +265,6 @@ a {
 
   .sidebar-close-btn {
     display: flex;
-  }
-
-  .sidebar-collapse-btn {
-    display: none;
   }
 
   .sidebar-overlay {

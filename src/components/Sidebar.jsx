@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Gauge, ListChecks, LayoutGrid, ClipboardList, MapPin, Settings, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Gauge, ListChecks, LayoutGrid, ClipboardList, MapPin, Settings, ArrowLeft, X } from 'lucide-react';
 
 const links = [
   { to: '/dashboard', label: 'Dashboard', icon: Gauge },
@@ -29,7 +29,13 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   return (
     <aside className={'sidebar' + (isOpen ? ' open' : '') + (isCollapsed ? ' collapsed' : '')}>
       <div className="sidebar-top">
-        <div className="sidebar-title"></div>
+        <button
+          type="button"
+          className="sidebar-title"
+          onClick={onToggleCollapse}
+          aria-label={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+          title={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+        ></button>
         <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">
           <X />
         </button>
@@ -54,9 +60,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
           <span className="sidebar-label">Log Out</span>
         </button>
       </div>
-      <button className="sidebar-collapse-btn" onClick={onToggleCollapse} aria-label="Collapse menu">
-        {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
-      </button>
     </aside>
   );
 }
