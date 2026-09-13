@@ -4,6 +4,7 @@ import { db } from '../firebase';
 
 export default function Settings() {
   const [form, setForm] = useState({ eventName: '', eventDateText: '', venueName: '' });
+  const [messages, setMessages] = useState({ welcomeMessage: '', waitingMessage: '', seatedMessage: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -19,6 +20,11 @@ export default function Settings() {
           eventDateText: data.eventDateText || '',
           venueName: data.venueName || '',
         });
+        setMessages({
+          welcomeMessage: data.welcomeMessage || '',
+          waitingMessage: data.waitingMessage || '',
+          seatedMessage: data.seatedMessage || '',
+        });
       }
     });
     return unsub;
@@ -33,6 +39,9 @@ export default function Settings() {
         eventName: form.eventName,
         eventDateText: form.eventDateText,
         venueName: form.venueName,
+        welcomeMessage: messages.welcomeMessage,
+        waitingMessage: messages.waitingMessage,
+        seatedMessage: messages.seatedMessage,
         registrationUrl,
       });
       setSaved(true);
@@ -73,6 +82,35 @@ export default function Settings() {
             <label>Venue Name</label>
             <input value={form.venueName} onChange={(e) => setForm({ ...form, venueName: e.target.value })} placeholder="e.g. Sunshine Garden Events Hall" />
           </div>
+          <h3 style={{ marginTop: 24, marginBottom: 16 }}>Guest Screen Messages</h3>
+          <div className="field">
+            <label>Welcome Message</label>
+            <input
+              value={messages.welcomeMessage}
+              onChange={(e) => setMessages({ ...messages, welcomeMessage: e.target.value })}
+              placeholder="Enter your name to check in and find your seat."
+            />
+          </div>
+          <div className="field">
+            <label>Waiting Message</label>
+            <input
+              value={messages.waitingMessage}
+              onChange={(e) => setMessages({ ...messages, waitingMessage: e.target.value })}
+              placeholder="Please wait while we seat you..."
+            />
+          </div>
+          <div className="field">
+            <label>Seated Message</label>
+            <input
+              value={messages.seatedMessage}
+              onChange={(e) => setMessages({ ...messages, seatedMessage: e.target.value })}
+              placeholder="You're all set, {name}! Head to Table {table}."
+            />
+            <p style={{ fontSize: '0.82rem', color: 'var(--ink-soft)', marginTop: 6 }}>
+              You can use {'{name}'} and {'{table}'} in this message and they will be replaced with the guest's real name and table number.
+            </p>
+          </div>
+
           <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
           {saved && <p style={{ color: 'var(--green)', marginTop: 10, fontWeight: 700 }}>Saved!</p>}
         </form>
