@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
+import { Menu } from 'lucide-react';
 
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
@@ -14,16 +15,37 @@ import ScanPage from './pages/ScanPage';
 import FloorPlan from './pages/FloorPlan';
 
 function AdminLayout({ children, user }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   if (user === undefined) {
     return <div className="empty-state">Loading...</div>;
   }
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
   return (
     <div className="app-shell">
-      <Sidebar />
-      <main className="main-content">{children}</main>
+      <div className="mobile-topbar">
+        <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)} aria-label="Open menu">
+          <Menu />
+        </button>
+        <div className="mobile-topbar-title">Party Admin</div>
+      </div>
+
+      {isMenuOpen && <div className="sidebar-overlay" onClick={() => setIsMenuOpen(false)} />}
+
+      <Sidebar
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
+      />
+
+      <main className={'main-content' + (isCollapsed ? ' sidebar-collapsed' : '')}>
+        {children}
+      </main>
     </div>
   );
 }

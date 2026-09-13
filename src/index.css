@@ -62,6 +62,11 @@ a {
   margin-left: 240px;
   padding: 36px 44px;
   max-width: 1100px;
+  transition: margin-left 0.2s ease;
+}
+
+.main-content.sidebar-collapsed {
+  margin-left: 72px;
 }
 
 .page-header {
@@ -71,6 +76,48 @@ a {
 .page-header p {
   color: var(--ink-soft);
   margin: 6px 0 0;
+}
+
+/* ---------- Mobile top bar (only shows on small screens) ---------- */
+
+.mobile-topbar {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  z-index: 30;
+}
+
+.mobile-menu-btn {
+  display: flex;
+  background: none;
+  border: none;
+  padding: 6px;
+  color: var(--ink);
+}
+
+.mobile-menu-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mobile-topbar-title {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--blue);
+}
+
+/* Dark background shown behind the menu on mobile */
+.sidebar-overlay {
+  display: none;
 }
 
 /* ---------- Sidebar ---------- */
@@ -86,6 +133,14 @@ a {
   padding: 28px 18px;
   display: flex;
   flex-direction: column;
+  transition: width 0.2s ease, transform 0.2s ease;
+  z-index: 40;
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .sidebar-title {
@@ -94,6 +149,20 @@ a {
   font-size: 1.3rem;
   color: var(--blue);
   padding: 0 10px;
+}
+
+/* X button to close the menu, only shows on mobile */
+.sidebar-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  padding: 4px;
+}
+
+.sidebar-close-btn svg {
+  width: 22px;
+  height: 22px;
 }
 
 .sidebar-divider {
@@ -140,6 +209,94 @@ a {
 .sidebar-footer {
   margin-top: auto;
   padding-top: 14px;
+}
+
+/* Round arrow button on the edge of the sidebar, used to collapse it on desktop */
+.sidebar-collapse-btn {
+  position: absolute;
+  top: 32px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+
+.sidebar-collapse-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Desktop: collapsed (icon-only) sidebar ---------- */
+
+@media (min-width: 769px) {
+  .sidebar.collapsed {
+    width: 72px;
+    padding: 28px 12px;
+  }
+
+  .sidebar.collapsed .sidebar-label {
+    display: none;
+  }
+
+  .sidebar.collapsed .sidebar-title {
+    display: none;
+  }
+
+  .sidebar.collapsed .sidebar-link {
+    justify-content: center;
+    padding: 11px 0;
+  }
+}
+
+/* ---------- Mobile / tablet: sidebar becomes a slide-in menu ---------- */
+
+@media (max-width: 768px) {
+  .mobile-topbar {
+    display: flex;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 24px 18px;
+    padding-top: 76px;
+    max-width: 100%;
+  }
+
+  .main-content.sidebar-collapsed {
+    margin-left: 0;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+  }
+
+  .sidebar-collapse-btn {
+    display: none;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(58, 50, 43, 0.4);
+    z-index: 35;
+  }
 }
 
 /* ---------- Cards ---------- */

@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Gauge, ListChecks, LayoutGrid, ClipboardList, MapPin, Settings, ArrowLeft } from 'lucide-react';
+import { Gauge, ListChecks, LayoutGrid, ClipboardList, MapPin, Settings, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const links = [
   { to: '/dashboard', label: 'Dashboard', icon: Gauge },
@@ -13,7 +13,7 @@ const links = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }) {
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -21,28 +21,42 @@ export default function Sidebar() {
     navigate('/login');
   }
 
+  // On a phone, close the menu once a page is picked
+  function handleLinkClick() {
+    if (onClose) onClose();
+  }
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-title">Party Admin</div>
+    <aside className={'sidebar' + (isOpen ? ' open' : '') + (isCollapsed ? ' collapsed' : '')}>
+      <div className="sidebar-top">
+        <div className="sidebar-title">Party Admin</div>
+        <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">
+          <X />
+        </button>
+      </div>
       <div className="sidebar-divider" />
       <nav className="sidebar-nav">
         {links.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
+            onClick={handleLinkClick}
             className={({ isActive }) => 'sidebar-link' + (isActive ? ' active' : '')}
           >
             <Icon />
-            {label}
+            <span className="sidebar-label">{label}</span>
           </NavLink>
         ))}
       </nav>
       <div className="sidebar-footer">
         <button onClick={handleLogout} className="sidebar-link" style={{ width: '100%', background: 'none', border: 'none', borderLeft: '3px solid transparent' }}>
           <ArrowLeft />
-          Log Out
+          <span className="sidebar-label">Log Out</span>
         </button>
       </div>
+      <button className="sidebar-collapse-btn" onClick={onToggleCollapse} aria-label="Collapse menu">
+        {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+      </button>
     </aside>
   );
 }
