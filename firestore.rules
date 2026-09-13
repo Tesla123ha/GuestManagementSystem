@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Guests can create their own check-in record when they scan the QR code,
+    // and read it back (the document ID acts like a private ticket number).
+    // Only signed-in admins can list all check-ins, edit them, or delete them.
+    match /checkins/{checkinId} {
+      allow get: if true;
+      allow list: if request.auth != null;
+      allow create: if request.resource.data.status == 'waiting'
+                    && request.resource.data.tableId == ''
+                    && request.resource.data.fullName is string
+                    && request.resource.data.fullName.size() > 0;
+      allow update, delete: if request.auth != null;
+    }
+
+    // The scan-order counter is incremented by guests during check-in.
+    match /counters/{counterId} {
+      allow read, write: if true;
+    }
+
+    // Everyone can view the tables so the live floor plan works for guests.
+    // Only signed-in admins can create, edit, or remove tables.
+    match /tables/{tableId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // The guest list is your private planning list. Only signed-in admins
+    // can view, add, edit, or delete names on it.
+    match /guestList/{entryId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Event details (party name, date, venue) are public so the scan page
+    // can greet guests by name. Only admins can change them.
+    match /eventSettings/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

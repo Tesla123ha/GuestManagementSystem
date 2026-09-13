@@ -1,0 +1,220 @@
+import React, { useEffect, useState } from 'react';
+import {
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+  doc,
+  updateDoc,
+  deleteDoc,
+  arrayUnion,
+  arrayRemove,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { db } from '../firebase';
+
+export default function CheckIns() {
+  const [checkins, setCheckins] = useState([]);
+  const [tables, setTables] = useState([]);
+  const [assigning, setAssigning] = useState(null);
+  const [tableId, setTableId] = useState('');
+  const [seatNumber, setSeatNumber] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+
+  useEffect(() => {
+    const q = query(collection(db, 'checkins'), orderBy('scanOrder', 'asc'));
+    const unsub = onSnapshot(q, (snap) => {
+      setCheckins(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    const unsubTables = onSnapshot(collection(db, 'tables'), (snap) => {
+      setTables(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    return () => {
+      unsub();
+      unsubTables();
+    };
+  }, []);
+
+  function openAssign(c) {
+    setAssigning(c);
+    setTableId(c.tableId || '');
+    setSeatNumber(c.seatNumber || '');
+  }
+
+  async function handleAssign(e) {
+    e.preventDefault();
+    if (!tableId) return;
+    setSaving(true);
+    try {
+      const table = tables.find((t) => t.id === tableId);
+      const previousTableId = assigning.tableId;
+
+      await updateDoc(doc(db, 'checkins', assigning.id), {
+        tableId,
+        tableNumber: table ? table.tableNumber : '',
+        seatNumber: seatNumber ? Number(seatNumber) : '',
+        status: 'assigned',
+        assignedAt: serverTimestamp(),
+      });
+
+      if (previousTableId && previousTableId !== tableId) {
+        await updateDoc(doc(db, 'tables', previousTableId), { occupantIds: arrayRemove(assigning.id) });
+      }
+      await updateDoc(doc(db, 'tables', tableId), {
+        occupantIds: arrayUnion(assigning.id),
+      });
+      setAssigning(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openDelete(c, e) {
+    e.stopPropagation();
+    setDeleteError('');
+    setDeleting(c);
+  }
+
+  async function confirmDelete() {
+    const c = deleting;
+    if (!c) return;
+    setSaving(true);
+    setDeleteError('');
+    try {
+      if (c.tableId) {
+        // Clear this guest off their table too. Wrapped in its own try/catch so that
+        // a table that no longer exists (or any other issue here) can never stop the
+        // guest's check-in record from being deleted below.
+        try {
+          await updateDoc(doc(db, 'tables', c.tableId), { occupantIds: arrayRemove(c.id) });
+        } catch (tableErr) {
+          console.error('Could not update the table, continuing with delete:', tableErr);
+        }
+      }
+      await deleteDoc(doc(db, 'checkins', c.id));
+      setDeleting(null);
+    } catch (err) {
+      console.error(err);
+      setDeleteError('Something went wrong deleting this guest. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const waitingCheckins = checkins.filter((c) => c.status !== 'assigned');
+  const seatedCheckins = checkins.filter((c) => c.status === 'assigned');
+
+  function renderTable(rows) {
+    return (
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Scanned At</th>
+            <th>Status</th>
+            <th style={{ width: 90 }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((c) => (
+            <tr key={c.id} onClick={() => openAssign(c)} style={{ cursor: 'pointer' }}>
+              <td>{c.scanOrder}</td>
+              <td>{c.fullName}</td>
+              <td>{c.scannedAt?.toDate ? c.scannedAt.toDate().toLocaleTimeString() : '—'}</td>
+              <td>
+                <span className={'badge ' + (c.status === 'assigned' ? 'badge-assigned' : 'badge-waiting')}>
+                  {c.status === 'assigned' ? 'Assigned' : 'Waiting'}
+                </span>
+              </td>
+              <td>
+                <button className="btn btn-outline" style={{ padding: '6px 12px', color: 'var(--red)', borderColor: 'var(--red)' }} onClick={(e) => openDelete(c, e)}>
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>Check-Ins</h2>
+        <p>Guests appear here the moment they scan the QR code, in the order they arrived. Click a row to assign or change their table.</p>
+      </div>
+
+      {checkins.length === 0 ? (
+        <div className="empty-state">No one has checked in yet.</div>
+      ) : (
+        <>
+          <h3 style={{ marginBottom: 10 }}>Waiting for a Table</h3>
+          {waitingCheckins.length === 0 ? (
+            <div className="empty-state" style={{ marginBottom: 24 }}>Everyone who has checked in has a table.</div>
+          ) : (
+            <div style={{ marginBottom: 24 }}>{renderTable(waitingCheckins)}</div>
+          )}
+
+          <h3 style={{ marginBottom: 10 }}>Already Checked In</h3>
+          {seatedCheckins.length === 0 ? (
+            <div className="empty-state">No one has been seated yet.</div>
+          ) : (
+            renderTable(seatedCheckins)
+          )}
+        </>
+      )}
+
+      {assigning && (
+        <div className="modal-overlay" onClick={() => setAssigning(null)}>
+          <form className="modal-box" onClick={(e) => e.stopPropagation()} onSubmit={handleAssign}>
+            <h3>Assign a seat</h3>
+            <p style={{ color: 'var(--ink-soft)', marginTop: 4 }}>{assigning.fullName}</p>
+            <div className="field" style={{ marginTop: 16 }}>
+              <label>Table</label>
+              <select value={tableId} onChange={(e) => setTableId(e.target.value)} required>
+                <option value="">Select a table</option>
+                {tables.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    Table {t.tableNumber} ({(t.occupantIds || []).length}/{t.capacity})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>Seat Number (optional)</label>
+              <input type="number" min="1" value={seatNumber} onChange={(e) => setSeatNumber(e.target.value)} />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setAssigning(null)}>Cancel</button>
+              <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {deleting && (
+        <div className="modal-overlay" onClick={() => !saving && setDeleting(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3>Remove Guest</h3>
+            <p style={{ marginTop: 12 }}>
+              Remove <strong>{deleting.fullName}</strong> from check-ins? This cannot be undone.
+            </p>
+            {deleteError && <p style={{ color: 'var(--red)', marginTop: 10 }}>{deleteError}</p>}
+            <div className="modal-actions">
+              <button type="button" className="btn btn-outline" disabled={saving} onClick={() => setDeleting(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{ background: 'var(--red)' }} disabled={saving} onClick={confirmDelete}>
+                {saving ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
