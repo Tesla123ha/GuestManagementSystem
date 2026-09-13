@@ -52,6 +52,36 @@ export default function CheckIns() {
     setGuestSearch('');
   }
 
+  // Finds the first open seat number (1..capacity) at a table, using the same
+  // "who's sitting where" logic Tables.jsx uses. currentCheckinId is excluded
+  // from the taken list so a guest already sitting at that table doesn't
+  // block themselves out.
+  function firstOpenSeat(table, currentCheckinId) {
+    const takenSeatNumbers = checkins
+      .filter((c) => c.tableId === table.id && c.id !== currentCheckinId)
+      .map((c) => Number(c.seatNumber));
+    const capacity = Number(table.capacity) || 0;
+    for (let seatNum = 1; seatNum <= capacity; seatNum++) {
+      if (!takenSeatNumbers.includes(seatNum)) return seatNum;
+    }
+    return '';
+  }
+
+  function chooseMatch(g) {
+    setMatchedName(g.fullName);
+    setGuestSearch('');
+    // If this guest list entry already has a predetermined table, pre-fill
+    // the table and the first open seat so the admin doesn't have to look
+    // it up and set it manually.
+    if (g.assignedTableId) {
+      const table = tables.find((t) => t.id === g.assignedTableId);
+      if (table) {
+        setTableId(table.id);
+        setSeatNumber(firstOpenSeat(table, assigning?.id));
+      }
+    }
+  }
+
   async function handleAssign(e) {
     e.preventDefault();
     const trimmedMatch = matchedName.trim();
@@ -215,13 +245,13 @@ export default function CheckIns() {
                     filteredGuestList.map((g) => (
                       <div
                         key={g.id}
-                        onClick={() => {
-                          setMatchedName(g.fullName);
-                          setGuestSearch('');
-                        }}
+                        onClick={() => chooseMatch(g)}
                         style={{ padding: '8px 10px', cursor: 'pointer', borderTop: '1px solid var(--border)' }}
                       >
                         {g.fullName}
+                        {g.assignedTableNumber ? (
+                          <span style={{ color: 'var(--ink-soft)' }}> - Table {g.assignedTableNumber}</span>
+                        ) : null}
                       </div>
                     ))
                   )}
