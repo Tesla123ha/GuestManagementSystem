@@ -23,6 +23,7 @@ export default function Tables() {
   const [seatMode, setSeatMode] = useState('existing'); // 'existing' or 'new'
   const [selectedCheckinId, setSelectedCheckinId] = useState('');
   const [newName, setNewName] = useState('');
+  const [collapsedTableIds, setCollapsedTableIds] = useState([]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'tables'), (snap) =>
@@ -68,6 +69,12 @@ export default function Tables() {
 
   function occupantsOf(tableId) {
     return checkins.filter((c) => c.tableId === tableId);
+  }
+
+  function toggleCollapsed(tableId) {
+    setCollapsedTableIds((prev) =>
+      prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId]
+    );
   }
 
   function occupantAtSeat(tableId, seatNumber) {
@@ -168,43 +175,56 @@ export default function Tables() {
           {tables.map((t) => {
             const occupants = occupantsOf(t.id);
             const seatNumbers = Array.from({ length: t.capacity }, (_, i) => i + 1);
+            const isCollapsed = collapsedTableIds.includes(t.id);
             return (
               <div key={t.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                  <div>
-                    <h3>Table {t.tableNumber}</h3>
-                    <p style={{ fontWeight: 700, margin: '4px 0 0' }}>{occupants.length} / {t.capacity} seats filled</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isCollapsed ? 0 : 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => toggleCollapsed(t.id)}
+                      style={{ padding: '6px 10px' }}
+                      title={isCollapsed ? 'Expand table' : 'Minimize table'}
+                    >
+                      {isCollapsed ? '▸' : '▾'}
+                    </button>
+                    <div>
+                      <h3>Table {t.tableNumber}</h3>
+                      <p style={{ fontWeight: 700, margin: '4px 0 0' }}>{occupants.length} / {t.capacity} seats filled</p>
+                    </div>
                   </div>
                   <button className="btn btn-outline" onClick={() => handleDeleteTable(t.id)} style={{ padding: '6px 12px' }}>Remove Table</button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 12 }}>
-                  {seatNumbers.map((num) => {
-                    const occupant = occupantAtSeat(t.id, num);
-                    return (
-                      <div
-                        key={num}
-                        onClick={() => openSeat(t, num)}
-                        style={{
-                          border: occupant ? '2px solid var(--blue)' : '2px dashed var(--border)',
-                          background: occupant ? 'var(--blue-light)' : '#fafcfe',
-                          borderRadius: 10,
-                          padding: '10px 8px',
-                          textAlign: 'center',
-                          cursor: 'pointer',
-                          minHeight: 64,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', fontWeight: 700 }}>SEAT {num}</div>
-                        <div style={{ fontSize: '0.85rem', marginTop: 4, fontWeight: occupant ? 700 : 400, color: occupant ? 'var(--ink)' : 'var(--ink-soft)' }}>
-                          {occupant ? occupant.fullName : 'Open'}
+                {!isCollapsed && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 12 }}>
+                    {seatNumbers.map((num) => {
+                      const occupant = occupantAtSeat(t.id, num);
+                      return (
+                        <div
+                          key={num}
+                          onClick={() => openSeat(t, num)}
+                          style={{
+                            border: occupant ? '2px solid var(--blue)' : '2px dashed var(--border)',
+                            background: occupant ? 'var(--blue-light)' : '#fafcfe',
+                            borderRadius: 10,
+                            padding: '10px 8px',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            minHeight: 64,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', fontWeight: 700 }}>SEAT {num}</div>
+                          <div style={{ fontSize: '0.85rem', marginTop: 4, fontWeight: occupant ? 700 : 400, color: occupant ? 'var(--ink)' : 'var(--ink-soft)' }}>
+                            {occupant ? occupant.fullName : 'Open'}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}

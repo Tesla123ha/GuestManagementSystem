@@ -16,9 +16,12 @@ import { db } from '../firebase';
 export default function CheckIns() {
   const [checkins, setCheckins] = useState([]);
   const [tables, setTables] = useState([]);
+  const [guestListEntries, setGuestListEntries] = useState([]);
   const [assigning, setAssigning] = useState(null);
   const [tableId, setTableId] = useState('');
   const [seatNumber, setSeatNumber] = useState('');
+  const [matchedName, setMatchedName] = useState('');
+  const [guestSearch, setGuestSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -31,9 +34,13 @@ export default function CheckIns() {
     const unsubTables = onSnapshot(collection(db, 'tables'), (snap) => {
       setTables(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
+    const unsubGuestList = onSnapshot(collection(db, 'guestList'), (snap) => {
+      setGuestListEntries(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
     return () => {
       unsub();
       unsubTables();
+      unsubGuestList();
     };
   }, []);
 
@@ -41,30 +48,40 @@ export default function CheckIns() {
     setAssigning(c);
     setTableId(c.tableId || '');
     setSeatNumber(c.seatNumber || '');
+    setMatchedName(c.fullName || '');
+    setGuestSearch('');
   }
 
   async function handleAssign(e) {
     e.preventDefault();
-    if (!tableId) return;
+    const trimmedMatch = matchedName.trim();
+    const nameChanged = trimmedMatch && trimmedMatch !== assigning.fullName;
+    if (!tableId && !nameChanged) return;
     setSaving(true);
     try {
-      const table = tables.find((t) => t.id === tableId);
-      const previousTableId = assigning.tableId;
-
-      await updateDoc(doc(db, 'checkins', assigning.id), {
-        tableId,
-        tableNumber: table ? table.tableNumber : '',
-        seatNumber: seatNumber ? Number(seatNumber) : '',
-        status: 'assigned',
-        assignedAt: serverTimestamp(),
-      });
-
-      if (previousTableId && previousTableId !== tableId) {
-        await updateDoc(doc(db, 'tables', previousTableId), { occupantIds: arrayRemove(assigning.id) });
+      const updates = {};
+      if (nameChanged) {
+        updates.fullName = trimmedMatch;
       }
-      await updateDoc(doc(db, 'tables', tableId), {
-        occupantIds: arrayUnion(assigning.id),
-      });
+      if (tableId) {
+        const table = tables.find((t) => t.id === tableId);
+        updates.tableId = tableId;
+        updates.tableNumber = table ? table.tableNumber : '';
+        updates.seatNumber = seatNumber ? Number(seatNumber) : '';
+        updates.status = 'assigned';
+        updates.assignedAt = serverTimestamp();
+      }
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(doc(db, 'checkins', assigning.id), updates);
+      }
+
+      if (tableId) {
+        const previousTableId = assigning.tableId;
+        if (previousTableId && previousTableId !== tableId) {
+          await updateDoc(doc(db, 'tables', previousTableId), { occupantIds: arrayRemove(assigning.id) });
+        }
+        await updateDoc(doc(db, 'tables', tableId), { occupantIds: arrayUnion(assigning.id) });
+      }
       setAssigning(null);
     } catch (err) {
       console.error(err);
@@ -107,8 +124,13 @@ export default function CheckIns() {
 
   const waitingCheckins = checkins.filter((c) => c.status !== 'assigned');
   const seatedCheckins = checkins.filter((c) => c.status === 'assigned');
+  const filteredGuestList = guestSearch.trim()
+    ? guestListEntries
+        .filter((g) => g.fullName?.toLowerCase().includes(guestSearch.toLowerCase()))
+        .slice(0, 8)
+    : [];
 
-  function renderTable(rows) {
+  function renderTable(rows, { numberForRow } = {}) {
     return (
       <table className="data-table">
         <thead>
@@ -121,9 +143,9 @@ export default function CheckIns() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((c) => (
+          {rows.map((c, index) => (
             <tr key={c.id} onClick={() => openAssign(c)} style={{ cursor: 'pointer' }}>
-              <td>{c.scanOrder}</td>
+              <td>{numberForRow ? numberForRow(c, index) : c.scanOrder}</td>
               <td>{c.fullName}</td>
               <td>{c.scannedAt?.toDate ? c.scannedAt.toDate().toLocaleTimeString() : '—'}</td>
               <td>
@@ -158,7 +180,7 @@ export default function CheckIns() {
           {waitingCheckins.length === 0 ? (
             <div className="empty-state" style={{ marginBottom: 24 }}>Everyone who has checked in has a table.</div>
           ) : (
-            <div style={{ marginBottom: 24 }}>{renderTable(waitingCheckins)}</div>
+            <div style={{ marginBottom: 24 }}>{renderTable(waitingCheckins, { numberForRow: (c, index) => index + 1 })}</div>
           )}
 
           <h3 style={{ marginBottom: 10 }}>Already Checked In</h3>
@@ -174,11 +196,51 @@ export default function CheckIns() {
         <div className="modal-overlay" onClick={() => setAssigning(null)}>
           <form className="modal-box" onClick={(e) => e.stopPropagation()} onSubmit={handleAssign}>
             <h3>Assign a seat</h3>
-            <p style={{ color: 'var(--ink-soft)', marginTop: 4 }}>{assigning.fullName}</p>
+            <p style={{ color: 'var(--ink-soft)', marginTop: 4 }}>
+              Checked in as: <strong>{assigning.fullName}</strong>
+            </p>
+
             <div className="field" style={{ marginTop: 16 }}>
+              <label>Match to Guest List (optional)</label>
+              <input
+                placeholder="Search the guest list..."
+                value={guestSearch}
+                onChange={(e) => setGuestSearch(e.target.value)}
+              />
+              {guestSearch.trim() && (
+                <div style={{ border: '1.5px solid var(--border)', borderRadius: 8, marginTop: 6, maxHeight: 150, overflowY: 'auto' }}>
+                  {filteredGuestList.length === 0 ? (
+                    <div style={{ padding: '8px 10px', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>No matches found.</div>
+                  ) : (
+                    filteredGuestList.map((g) => (
+                      <div
+                        key={g.id}
+                        onClick={() => {
+                          setMatchedName(g.fullName);
+                          setGuestSearch('');
+                        }}
+                        style={{ padding: '8px 10px', cursor: 'pointer', borderTop: '1px solid var(--border)' }}
+                      >
+                        {g.fullName}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              {matchedName.trim() && matchedName.trim() !== assigning.fullName && (
+                <p style={{ color: 'var(--blue)', fontSize: '0.85rem', marginTop: 6 }}>
+                  Will rename to <strong>{matchedName}</strong>.{' '}
+                  <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={() => setMatchedName(assigning.fullName)}>
+                    Undo
+                  </span>
+                </p>
+              )}
+            </div>
+
+            <div className="field">
               <label>Table</label>
-              <select value={tableId} onChange={(e) => setTableId(e.target.value)} required>
-                <option value="">Select a table</option>
+              <select value={tableId} onChange={(e) => setTableId(e.target.value)}>
+                <option value="">Don't change table</option>
                 {tables.map((t) => (
                   <option key={t.id} value={t.id}>
                     Table {t.tableNumber} ({(t.occupantIds || []).length}/{t.capacity})
