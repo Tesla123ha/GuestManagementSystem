@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   collection,
   onSnapshot,
@@ -27,6 +27,10 @@ export default function Tables() {
   const [guestListEntries, setGuestListEntries] = useState([]);
   const [renameName, setRenameName] = useState('');
   const [renameSearch, setRenameSearch] = useState('');
+  const [editingTable, setEditingTable] = useState(null); // the table being edited, or null
+  const [editSeats, setEditSeats] = useState('');
+  const [editError, setEditError] = useState('');
+  const seenTableIdsRef = useRef(new Set());
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'tables'), (snap) =>
@@ -44,6 +48,17 @@ export default function Tables() {
       unsubGuestList();
     };
   }, []);
+
+  // Every table starts collapsed. When a table id shows up for the first time
+  // (first load, or a table someone just added), mark it collapsed. Tables the
+  // user has already opened or closed by hand are left alone on later updates.
+  useEffect(() => {
+    const newIds = tables.map((t) => t.id).filter((id) => !seenTableIdsRef.current.has(id));
+    if (newIds.length > 0) {
+      newIds.forEach((id) => seenTableIdsRef.current.add(id));
+      setCollapsedTableIds((prev) => [...prev, ...newIds]);
+    }
+  }, [tables]);
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -72,6 +87,35 @@ export default function Tables() {
   async function handleDeleteTable(id) {
     if (!window.confirm('Remove this table? Guests assigned to it will need to be reassigned.')) return;
     await deleteDoc(doc(db, 'tables', id));
+  }
+
+  function openEditSeats(t, e) {
+    e.stopPropagation();
+    setEditingTable(t);
+    setEditSeats(String(t.capacity));
+    setEditError('');
+  }
+
+  async function handleSaveSeats(e) {
+    e.preventDefault();
+    const newCapacity = Number(editSeats);
+    if (!newCapacity || newCapacity < 1) return;
+    const occupantCount = occupantsOf(editingTable.id).length;
+    if (newCapacity < occupantCount) {
+      setEditError(`This table has ${occupantCount} guest${occupantCount === 1 ? '' : 's'} seated. Move some guests first, or pick a number of seats that fits everyone.`);
+      return;
+    }
+    setSaving(true);
+    setEditError('');
+    try {
+      await updateDoc(doc(db, 'tables', editingTable.id), { capacity: newCapacity });
+      setEditingTable(null);
+    } catch (err) {
+      console.error(err);
+      setEditError('Something went wrong saving this. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function occupantsOf(tableId) {
@@ -235,7 +279,10 @@ export default function Tables() {
                       <p style={{ fontWeight: 700, margin: '4px 0 0' }}>{occupants.length} / {t.capacity} seats filled</p>
                     </div>
                   </div>
-                  <button className="btn btn-outline" onClick={() => handleDeleteTable(t.id)} style={{ padding: '6px 12px' }}>Remove Table</button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-outline" onClick={(e) => openEditSeats(t, e)} style={{ padding: '6px 12px' }}>Edit Seats</button>
+                    <button className="btn btn-outline" onClick={() => handleDeleteTable(t.id)} style={{ padding: '6px 12px' }}>Remove Table</button>
+                  </div>
                 </div>
                 {!isCollapsed && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 12 }}>
@@ -287,6 +334,30 @@ export default function Tables() {
             </div>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setAdding(false)}>Cancel</button>
+              <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {editingTable && (
+        <div className="modal-overlay" onClick={() => !saving && setEditingTable(null)}>
+          <form className="modal-box" onClick={(e) => e.stopPropagation()} onSubmit={handleSaveSeats}>
+            <h3>Edit Table {editingTable.tableNumber}</h3>
+            <div className="field" style={{ marginTop: 16 }}>
+              <label>Number of Seats</label>
+              <input
+                autoFocus
+                type="number"
+                min="1"
+                value={editSeats}
+                onChange={(e) => setEditSeats(e.target.value)}
+                required
+              />
+            </div>
+            {editError && <p style={{ color: 'var(--red)', marginTop: 4 }}>{editError}</p>}
+            <div className="modal-actions">
+              <button type="button" className="btn btn-outline" disabled={saving} onClick={() => setEditingTable(null)}>Cancel</button>
               <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </form>

@@ -428,6 +428,11 @@ a {
   color: #3f6b4f;
 }
 
+.badge-muted {
+  background: #ece8e0;
+  color: var(--ink-soft);
+}
+
 .search-input {
   padding: 10px 16px;
   border-radius: 10px;

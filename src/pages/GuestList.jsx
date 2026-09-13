@@ -12,6 +12,9 @@ import { db } from '../firebase';
 export default function GuestList() {
   const [entries, setEntries] = useState([]);
   const [tables, setTables] = useState([]);
+  const [checkins, setCheckins] = useState([]);
+  const [checkedInFilter, setCheckedInFilter] = useState('all'); // all | checkedIn | notCheckedIn
+  const [tableFilter, setTableFilter] = useState('all'); // all | 'none' | a table id
   const [pasteText, setPasteText] = useState('');
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(null); // the entry being edited, or null
@@ -35,11 +38,25 @@ export default function GuestList() {
       rows.sort((a, b) => (a.tableNumber || 0) - (b.tableNumber || 0));
       setTables(rows);
     });
+    const unsubCheckins = onSnapshot(collection(db, 'checkins'), (snap) => {
+      setCheckins(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
     return () => {
       unsub();
       unsubTables();
+      unsubCheckins();
     };
   }, []);
+
+  // A guest counts as checked in if their name matches a check-in record.
+  // Check-ins aren't linked to a guest list id, so we match on the trimmed,
+  // lowercased name, the same way the rest of the app already does.
+  const checkedInNames = new Set(
+    checkins.map((c) => (c.fullName || '').trim().toLowerCase()).filter(Boolean)
+  );
+  function isCheckedIn(entry) {
+    return checkedInNames.has((entry.fullName || '').trim().toLowerCase());
+  }
 
   // Splits pasted text on new lines OR commas, trims blanks, and drops empty entries.
   // If a line ends with "- Table 5" (or just "- 5"), that becomes the guest's table number.
@@ -153,7 +170,14 @@ export default function GuestList() {
     }
   }
 
-  const filtered = entries.filter((e) => e.fullName?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = entries.filter((e) => {
+    if (!e.fullName?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (checkedInFilter === 'checkedIn' && !isCheckedIn(e)) return false;
+    if (checkedInFilter === 'notCheckedIn' && isCheckedIn(e)) return false;
+    if (tableFilter === 'none' && e.assignedTableId) return false;
+    if (tableFilter !== 'all' && tableFilter !== 'none' && e.assignedTableId !== tableFilter) return false;
+    return true;
+  });
 
   return (
     <div>
@@ -198,6 +222,18 @@ export default function GuestList() {
           onChange={(e) => setSearch(e.target.value)}
           style={{ flex: 1, minWidth: 220 }}
         />
+        <select value={checkedInFilter} onChange={(e) => setCheckedInFilter(e.target.value)}>
+          <option value="all">All Guests</option>
+          <option value="checkedIn">Checked In</option>
+          <option value="notCheckedIn">Not Checked In</option>
+        </select>
+        <select value={tableFilter} onChange={(e) => setTableFilter(e.target.value)}>
+          <option value="all">All Tables</option>
+          <option value="none">No Table Yet</option>
+          {tables.map((t) => (
+            <option key={t.id} value={t.id}>Table {t.tableNumber}</option>
+          ))}
+        </select>
         {selectedIds.length > 0 && (
           <button className="btn btn-outline" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={openDeleteSelected}>
             Delete Selected ({selectedIds.length})
@@ -220,6 +256,7 @@ export default function GuestList() {
                 />
               </th>
               <th>Name</th>
+              <th style={{ width: 140 }}>Status</th>
               <th style={{ width: 160 }}></th>
             </tr>
           </thead>
@@ -239,6 +276,11 @@ export default function GuestList() {
                   {entry.assignedTableNumber ? (
                     <span style={{ color: 'var(--ink-soft)' }}> - Table {entry.assignedTableNumber}</span>
                   ) : null}
+                </td>
+                <td>
+                  <span className={'badge ' + (isCheckedIn(entry) ? 'badge-assigned' : 'badge-muted')}>
+                    {isCheckedIn(entry) ? 'Checked In' : 'Not Checked In'}
+                  </span>
                 </td>
                 <td>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
