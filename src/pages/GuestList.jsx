@@ -11,10 +11,13 @@ import { db } from '../firebase';
 
 export default function GuestList() {
   const [entries, setEntries] = useState([]);
+  const [tables, setTables] = useState([]);
   const [pasteText, setPasteText] = useState('');
   const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+  const [editing, setEditing] = useState(null); // the entry being edited, or null
   const [editingName, setEditingName] = useState('');
+  const [editingTableId, setEditingTableId] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [deleting, setDeleting] = useState(null); // { ids: [...], names: [...] }
@@ -27,7 +30,15 @@ export default function GuestList() {
       rows.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
       setEntries(rows);
     });
-    return unsub;
+    const unsubTables = onSnapshot(collection(db, 'tables'), (snap) => {
+      const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      rows.sort((a, b) => (a.tableNumber || 0) - (b.tableNumber || 0));
+      setTables(rows);
+    });
+    return () => {
+      unsub();
+      unsubTables();
+    };
   }, []);
 
   // Splits pasted text on new lines OR commas, trims blanks, and drops empty entries
@@ -58,14 +69,28 @@ export default function GuestList() {
   }
 
   function startEdit(entry) {
-    setEditingId(entry.id);
-    setEditingName(entry.fullName);
+    setEditing(entry);
+    setEditingName(entry.fullName || '');
+    setEditingTableId(entry.assignedTableId || '');
   }
 
-  async function saveEdit(id) {
-    if (!editingName.trim()) return;
-    await updateDoc(doc(db, 'guestList', id), { fullName: editingName.trim() });
-    setEditingId(null);
+  async function saveEdit(e) {
+    e.preventDefault();
+    if (!editing || !editingName.trim()) return;
+    setSavingEdit(true);
+    try {
+      const table = editingTableId ? tables.find((t) => t.id === editingTableId) : null;
+      await updateDoc(doc(db, 'guestList', editing.id), {
+        fullName: editingName.trim(),
+        assignedTableId: editingTableId || '',
+        assignedTableNumber: table ? table.tableNumber : '',
+      });
+      setEditing(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingEdit(false);
+    }
   }
 
   function openDeleteOne(entry) {
@@ -172,6 +197,7 @@ export default function GuestList() {
                   type="checkbox"
                   checked={filtered.length > 0 && filtered.every((e) => selectedIds.includes(e.id))}
                   onChange={() => toggleSelectAll(filtered.map((e) => e.id))}
+                  style={{ width: 20, height: 20 }}
                 />
               </th>
               <th>Name</th>
@@ -186,40 +212,54 @@ export default function GuestList() {
                     type="checkbox"
                     checked={selectedIds.includes(entry.id)}
                     onChange={() => toggleSelected(entry.id)}
+                    style={{ width: 20, height: 20 }}
                   />
                 </td>
-                <td>
-                  {editingId === entry.id ? (
-                    <input
-                      autoFocus
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && saveEdit(entry.id)}
-                      style={{ padding: '6px 10px', borderRadius: 8, border: '1.5px solid var(--blue)', width: '100%' }}
-                    />
-                  ) : (
-                    entry.fullName
-                  )}
+                <td onClick={() => startEdit(entry)} style={{ cursor: 'pointer' }}>
+                  {entry.fullName}
+                  {entry.assignedTableNumber ? (
+                    <span style={{ color: 'var(--ink-soft)' }}> - Table {entry.assignedTableNumber}</span>
+                  ) : null}
                 </td>
                 <td>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                    {editingId === entry.id ? (
-                      <>
-                        <button className="btn btn-primary" style={{ padding: '6px 12px' }} onClick={() => saveEdit(entry.id)}>Save</button>
-                        <button className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={() => setEditingId(null)}>Cancel</button>
-                      </>
-                    ) : (
-                      <>
-                        <button className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={() => startEdit(entry)}>Edit</button>
-                        <button className="btn btn-outline" style={{ padding: '6px 12px', color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => openDeleteOne(entry)}>Delete</button>
-                      </>
-                    )}
+                    <button className="btn btn-outline" style={{ padding: '6px 12px', color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => openDeleteOne(entry)}>Delete</button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+
+      {editing && (
+        <div className="modal-overlay" onClick={() => !savingEdit && setEditing(null)}>
+          <form className="modal-box" onClick={(e) => e.stopPropagation()} onSubmit={saveEdit}>
+            <h3>Edit Guest</h3>
+            <div className="field" style={{ marginTop: 16 }}>
+              <label>Name</label>
+              <input
+                autoFocus
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label>Assigned Table</label>
+              <select value={editingTableId} onChange={(e) => setEditingTableId(e.target.value)}>
+                <option value="">No table yet</option>
+                {tables.map((t) => (
+                  <option key={t.id} value={t.id}>Table {t.tableNumber}</option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-outline" disabled={savingEdit} onClick={() => setEditing(null)}>Cancel</button>
+              <button className="btn btn-primary" disabled={savingEdit}>{savingEdit ? 'Saving...' : 'Save'}</button>
+            </div>
+          </form>
+        </div>
       )}
 
       {deleting && (
