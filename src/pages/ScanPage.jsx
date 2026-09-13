@@ -207,7 +207,7 @@ export default function ScanPage() {
           <p>
             {seatedMessage
               ? fillPlaceholders(seatedMessage, { name: checkin.fullName, table: checkin.tableNumber || '' })
-              : `You're seated at Table ${checkin.tableNumber || 'N/A'}${checkin.seatNumber ? `, Seat ${checkin.seatNumber}` : ''}.`}
+              : `You're seated at Table ${checkin.tableNumber || 'N/A'}.`}
           </p>
         </div>
         <div className="card">
