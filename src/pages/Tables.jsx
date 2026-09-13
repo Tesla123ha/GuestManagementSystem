@@ -24,6 +24,9 @@ export default function Tables() {
   const [selectedCheckinId, setSelectedCheckinId] = useState('');
   const [newName, setNewName] = useState('');
   const [collapsedTableIds, setCollapsedTableIds] = useState([]);
+  const [guestListEntries, setGuestListEntries] = useState([]);
+  const [renameName, setRenameName] = useState('');
+  const [renameSearch, setRenameSearch] = useState('');
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'tables'), (snap) =>
@@ -32,9 +35,13 @@ export default function Tables() {
     const unsubCheckins = onSnapshot(collection(db, 'checkins'), (snap) =>
       setCheckins(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
+    const unsubGuestList = onSnapshot(collection(db, 'guestList'), (snap) =>
+      setGuestListEntries(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    );
     return () => {
       unsub();
       unsubCheckins();
+      unsubGuestList();
     };
   }, []);
 
@@ -77,6 +84,14 @@ export default function Tables() {
     );
   }
 
+  function collapseAll() {
+    setCollapsedTableIds(tables.map((t) => t.id));
+  }
+
+  function expandAll() {
+    setCollapsedTableIds([]);
+  }
+
   function occupantAtSeat(tableId, seatNumber) {
     return checkins.find((c) => c.tableId === tableId && Number(c.seatNumber) === seatNumber);
   }
@@ -89,6 +104,8 @@ export default function Tables() {
     setSeatMode('existing');
     setSelectedCheckinId('');
     setNewName('');
+    setRenameName(occupant ? occupant.fullName : '');
+    setRenameSearch('');
   }
 
   async function handleUnassignSeat() {
@@ -102,6 +119,26 @@ export default function Tables() {
     });
     await updateDoc(doc(db, 'tables', table.id), { occupantIds: arrayRemove(occupant.id) });
     setSeatModal(null);
+  }
+
+  async function handleRenameOccupant() {
+    const { occupant } = seatModal;
+    if (!occupant) return;
+    const trimmedName = renameName.trim();
+    const nameChanged = trimmedName && trimmedName !== occupant.fullName;
+    if (!nameChanged) {
+      setSeatModal(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, 'checkins', occupant.id), { fullName: trimmedName });
+      setSeatModal(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSeatExisting(e) {
@@ -165,7 +202,15 @@ export default function Tables() {
           <h2>Tables</h2>
           <p>Set up each table's seats ahead of time, then click a seat to fill it.</p>
         </div>
-        <button className="btn btn-accent" onClick={() => setAdding(true)}>Add Tables</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {tables.length > 0 && (
+            <>
+              <button className="btn btn-outline" onClick={collapseAll}>Collapse All</button>
+              <button className="btn btn-outline" onClick={expandAll}>Expand All</button>
+            </>
+          )}
+          <button className="btn btn-accent" onClick={() => setAdding(true)}>Add Tables</button>
+        </div>
       </div>
 
       {tables.length === 0 ? (
@@ -179,15 +224,12 @@ export default function Tables() {
             return (
               <div key={t.id} className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isCollapsed ? 0 : 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => toggleCollapsed(t.id)}
-                      style={{ padding: '6px 10px' }}
-                      title={isCollapsed ? 'Expand table' : 'Minimize table'}
-                    >
-                      {isCollapsed ? '▸' : '▾'}
-                    </button>
+                  <div
+                    onClick={() => toggleCollapsed(t.id)}
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', flex: 1 }}
+                    title={isCollapsed ? 'Expand table' : 'Collapse table'}
+                  >
+                    <span style={{ fontSize: '1rem', marginTop: 4, color: 'var(--ink-soft)' }}>{isCollapsed ? '▸' : '▾'}</span>
                     <div>
                       <h3>Table {t.tableNumber}</h3>
                       <p style={{ fontWeight: 700, margin: '4px 0 0' }}>{occupants.length} / {t.capacity} seats filled</p>
@@ -259,9 +301,49 @@ export default function Tables() {
             {seatModal.occupant ? (
               <div style={{ marginTop: 16 }}>
                 <p>Currently seated: <strong>{seatModal.occupant.fullName}</strong></p>
+
+                <div className="field" style={{ marginTop: 16 }}>
+                  <label>Rename Guest</label>
+                  <input
+                    placeholder="Search the guest list..."
+                    value={renameSearch}
+                    onChange={(e) => setRenameSearch(e.target.value)}
+                  />
+                  {renameSearch.trim() && (
+                    <div style={{ border: '1.5px solid var(--border)', borderRadius: 8, marginTop: 6, maxHeight: 150, overflowY: 'auto' }}>
+                      {guestListEntries.filter((g) => g.fullName?.toLowerCase().includes(renameSearch.toLowerCase())).slice(0, 8).length === 0 ? (
+                        <div style={{ padding: '8px 10px', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>No matches found.</div>
+                      ) : (
+                        guestListEntries
+                          .filter((g) => g.fullName?.toLowerCase().includes(renameSearch.toLowerCase()))
+                          .slice(0, 8)
+                          .map((g) => (
+                            <div
+                              key={g.id}
+                              onClick={() => {
+                                setRenameName(g.fullName);
+                                setRenameSearch('');
+                              }}
+                              style={{ padding: '8px 10px', cursor: 'pointer', borderTop: '1px solid var(--border)' }}
+                            >
+                              {g.fullName}
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  )}
+                  <input
+                    value={renameName}
+                    onChange={(e) => setRenameName(e.target.value)}
+                    placeholder="Type a new name, or pick a match above"
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
+
                 <div className="modal-actions">
                   <button className="btn btn-outline" onClick={() => setSeatModal(null)}>Close</button>
                   <button className="btn btn-primary" style={{ background: 'var(--red)' }} onClick={handleUnassignSeat}>Remove From Seat</button>
+                  <button className="btn btn-primary" disabled={saving} onClick={handleRenameOccupant}>{saving ? 'Saving...' : 'Save'}</button>
                 </div>
               </div>
             ) : (
