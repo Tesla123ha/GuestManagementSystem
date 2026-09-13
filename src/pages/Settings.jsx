@@ -7,7 +7,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const registrationUrl = window.location.origin + '/checkin';
+  const registrationUrl = window.location.origin + import.meta.env.BASE_URL + '#/checkin';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(registrationUrl)}`;
 
   useEffect(() => {
