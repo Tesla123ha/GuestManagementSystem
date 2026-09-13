@@ -116,6 +116,7 @@ export default function FloorPlan({ highlightCheckinId }) {
     setDraggedTableId(null);
   }
 
+  const isGuestView = Boolean(highlightCheckinId);
   const selected = tables.find((t) => t.id === selectedTable);
   const placedTables = tables.filter((t) => isInBounds(t, gridSize));
   const unplacedTables = tables.filter((t) => !isInBounds(t, gridSize));
@@ -181,6 +182,34 @@ export default function FloorPlan({ highlightCheckinId }) {
 
       {tables.length === 0 ? (
         <div className="empty-state">No tables have been set up yet. Add tables from the Tables page.</div>
+      ) : isGuestView ? (
+        <>
+          <div
+            className="floor-plan-grid floor-plan-grid--fit"
+            style={{
+              gridTemplateColumns: `repeat(${gridSize.cols}, 1fr)`,
+              gridTemplateRows: `repeat(${gridSize.rows}, 1fr)`,
+            }}
+          >
+            {Array.from({ length: gridSize.rows }).map((_, row) =>
+              Array.from({ length: gridSize.cols }).map((_, col) => {
+                const table = placedTables.find((t) => t.row === row && t.col === col);
+                return (
+                  <div key={`${row}-${col}`} className="floor-plan-cell">
+                    {table ? renderTableShape(table) : null}
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {unplacedTables.length > 0 && (
+            <div className="floor-plan-unplaced">
+              <div className="floor-plan-unplaced-tray">
+                {unplacedTables.map((t) => renderTableShape(t))}
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <>
           <div className="floor-plan-scroll">

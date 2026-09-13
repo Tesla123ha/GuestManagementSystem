@@ -357,6 +357,12 @@ a {
   min-width: 100%;
 }
 
+.floor-plan-grid.floor-plan-grid--fit {
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
 .floor-plan-cell {
   aspect-ratio: 1;
   display: flex;
