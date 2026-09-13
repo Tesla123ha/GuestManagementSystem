@@ -171,8 +171,8 @@ export default function ScanPage() {
           <h1>Welcome to {eventName}!</h1>
           <p>{welcomeMessage || DEFAULT_WELCOME_MESSAGE}</p>
           <div className="field" style={{ marginTop: 20, textAlign: 'left' }}>
-            <label>Full Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" required />
+            <label>Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
           </div>
           <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={submitting}>
             {submitting ? 'Checking in...' : 'Continue'}
