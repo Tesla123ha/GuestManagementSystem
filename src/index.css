@@ -337,9 +337,24 @@ a {
 
 /* ---------- Floor plan ---------- */
 
+.floor-plan-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+}
+
+.floor-plan-scroll-hint {
+  display: none;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  margin-top: 8px;
+}
+
 .floor-plan-grid {
   display: grid;
-  gap: 20px;
+  gap: 14px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .floor-plan-cell {
@@ -410,6 +425,42 @@ a {
 
 .table-shape.editable {
   cursor: grab;
+}
+
+@media (max-width: 600px) {
+  .guest-screen {
+    padding: 14px;
+  }
+
+  .guest-card {
+    padding: 28px 20px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .floor-plan-scroll-hint {
+    display: block;
+  }
+
+  .floor-plan-grid-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .floor-plan-grid-controls input {
+    width: 100%;
+  }
+
+  .table-shape .table-num {
+    font-size: 1.05rem;
+  }
+
+  .table-shape .table-seats {
+    font-size: 0.68rem;
+  }
 }
 
 .table-shape:hover {

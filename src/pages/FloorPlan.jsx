@@ -183,28 +183,31 @@ export default function FloorPlan({ highlightCheckinId }) {
         <div className="empty-state">No tables have been set up yet. Add tables from the Tables page.</div>
       ) : (
         <>
-          <div
-            className="floor-plan-grid"
-            style={{
-              gridTemplateColumns: `repeat(${gridSize.cols}, 1fr)`,
-              gridTemplateRows: `repeat(${gridSize.rows}, 1fr)`,
-            }}
-          >
-            {Array.from({ length: gridSize.rows }).map((_, row) =>
-              Array.from({ length: gridSize.cols }).map((_, col) => {
-                const table = placedTables.find((t) => t.row === row && t.col === col);
-                return (
-                  <div
-                    key={`${row}-${col}`}
-                    className={'floor-plan-cell' + (editMode ? ' editable' : '')}
-                    onDragOver={editMode ? (e) => e.preventDefault() : undefined}
-                    onDrop={editMode ? () => handleDrop(row, col) : undefined}
-                  >
-                    {table ? renderTableShape(table, { draggable: editMode }) : null}
-                  </div>
-                );
-              })
-            )}
+          <div className="floor-plan-scroll">
+            <div
+              className="floor-plan-grid"
+              style={{
+                gridTemplateColumns: `repeat(${gridSize.cols}, minmax(64px, 96px))`,
+                gridTemplateRows: `repeat(${gridSize.rows}, minmax(64px, 96px))`,
+              }}
+            >
+              {Array.from({ length: gridSize.rows }).map((_, row) =>
+                Array.from({ length: gridSize.cols }).map((_, col) => {
+                  const table = placedTables.find((t) => t.row === row && t.col === col);
+                  return (
+                    <div
+                      key={`${row}-${col}`}
+                      className={'floor-plan-cell' + (editMode ? ' editable' : '')}
+                      onDragOver={editMode ? (e) => e.preventDefault() : undefined}
+                      onDrop={editMode ? () => handleDrop(row, col) : undefined}
+                    >
+                      {table ? renderTableShape(table, { draggable: editMode }) : null}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            {gridSize.cols > 4 && <p className="floor-plan-scroll-hint">Swipe sideways to see the full layout →</p>}
           </div>
 
           {editMode && unplacedTables.length > 0 && (
