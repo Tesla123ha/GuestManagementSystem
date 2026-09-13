@@ -214,26 +214,40 @@ export default function GuestList() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 18 }}>
         <input
           className="search-input"
           placeholder="Search the guest list..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 220 }}
+          style={{ flex: 1, minWidth: 220, marginBottom: 0 }}
         />
-        <select value={checkedInFilter} onChange={(e) => setCheckedInFilter(e.target.value)}>
-          <option value="all">All Guests</option>
-          <option value="checkedIn">Checked In</option>
-          <option value="notCheckedIn">Not Checked In</option>
-        </select>
-        <select value={tableFilter} onChange={(e) => setTableFilter(e.target.value)}>
-          <option value="all">All Tables</option>
-          <option value="none">No Table Yet</option>
-          {tables.map((t) => (
-            <option key={t.id} value={t.id}>Table {t.tableNumber}</option>
-          ))}
-        </select>
+        <div className="filter-select-wrap">
+          <label className="filter-select-label">Check-In Status</label>
+          <select
+            className={'filter-select' + (checkedInFilter !== 'all' ? ' filter-select--active' : '')}
+            value={checkedInFilter}
+            onChange={(e) => setCheckedInFilter(e.target.value)}
+          >
+            <option value="all">All Guests</option>
+            <option value="checkedIn">Checked In</option>
+            <option value="notCheckedIn">Not Checked In</option>
+          </select>
+        </div>
+        <div className="filter-select-wrap">
+          <label className="filter-select-label">Table</label>
+          <select
+            className={'filter-select' + (tableFilter !== 'all' ? ' filter-select--active' : '')}
+            value={tableFilter}
+            onChange={(e) => setTableFilter(e.target.value)}
+          >
+            <option value="all">All Tables</option>
+            <option value="none">No Table Yet</option>
+            {tables.map((t) => (
+              <option key={t.id} value={t.id}>Table {t.tableNumber}</option>
+            ))}
+          </select>
+        </div>
         {selectedIds.length > 0 && (
           <button className="btn btn-outline" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={openDeleteSelected}>
             Delete Selected ({selectedIds.length})

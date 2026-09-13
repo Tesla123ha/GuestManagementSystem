@@ -446,6 +446,58 @@ a {
   border-color: var(--blue);
 }
 
+/* ---------- Filter selects ---------- */
+
+.filter-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-select-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-left: 4px;
+}
+
+.filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 9px 38px 9px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background-color: #fff;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a7c6c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  min-width: 168px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.filter-select:hover {
+  border-color: var(--gold);
+}
+
+.filter-select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-light);
+}
+
+.filter-select--active {
+  border-color: var(--blue);
+  background-color: var(--blue-light);
+  color: var(--blue-dark);
+}
+
 /* ---------- Modal ---------- */
 
 .modal-overlay {
