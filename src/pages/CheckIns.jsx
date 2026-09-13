@@ -217,7 +217,7 @@ export default function CheckIns() {
           {seatedCheckins.length === 0 ? (
             <div className="empty-state">No one has been seated yet.</div>
           ) : (
-            renderTable(seatedCheckins)
+            renderTable(seatedCheckins, { numberForRow: (c, index) => index + 1 })
           )}
         </>
       )}
