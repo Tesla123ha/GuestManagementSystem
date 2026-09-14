@@ -31,10 +31,20 @@ async function callScript(payload) {
   return result;
 }
 
+// Turns a guest's full name into safe text for a file name (letters,
+// numbers, spaces, dashes and underscores only).
+function toSafeFileName(name) {
+  const cleaned = (name || '').trim().replace(/[^a-zA-Z0-9 _-]/g, '');
+  return cleaned || 'Guest';
+}
+
 // Uploads a photo file to Drive and returns { imageUrl, fileId }.
-export async function uploadPhotoToDrive(file) {
+// uploaderName becomes the Drive file name, so it's easy to tell whose
+// photo is which straight from the Drive folder.
+export async function uploadPhotoToDrive(file, uploaderName) {
   const base64Data = await fileToBase64(file);
-  const fileName = `${Date.now()}-${file.name}`;
+  const extension = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')) : '';
+  const fileName = `${toSafeFileName(uploaderName)}-${Date.now()}${extension}`;
   const result = await callScript({
     action: 'upload',
     fileName,

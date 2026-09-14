@@ -7,7 +7,6 @@ import { uploadPhotoToDrive } from '../googleDrive';
 export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
   const [viewingPhoto, setViewingPhoto] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -22,10 +21,9 @@ export default function Album({ uploaderName }) {
   async function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    setError('');
     setUploading(true);
     try {
-      const { imageUrl, fileId } = await uploadPhotoToDrive(file);
+      const { imageUrl, fileId } = await uploadPhotoToDrive(file, uploaderName);
       await addDoc(collection(db, 'albumPhotos'), {
         imageUrl,
         fileId,
@@ -33,8 +31,8 @@ export default function Album({ uploaderName }) {
         createdAt: serverTimestamp(),
       });
     } catch (err) {
+      // Upload failed silently on purpose; nothing is shown to the guest.
       console.error(err);
-      setError('That photo could not be uploaded. Please try again.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -66,8 +64,6 @@ export default function Album({ uploaderName }) {
           style={{ display: 'none' }}
         />
       </div>
-
-      {error && <p className="error-text">{error}</p>}
 
       {photos.length === 0 ? (
         <div className="empty-state">No photos yet. Be the first to add one!</div>
