@@ -38,7 +38,9 @@ export default function Album({ uploaderName }) {
       id: f.fileId,
       fileId: f.fileId,
       imageUrl: f.url,
-      uploaderName: f.name.replace(/\.[a-zA-Z0-9]+$/, ''),
+      // Our own uploads are named "Name-1234567890.jpg"; strip the file
+      // extension and that trailing timestamp so just the name is left.
+      uploaderName: f.name.replace(/\.[a-zA-Z0-9]+$/, '').replace(/-\d+$/, ''),
     }));
   const displayPhotos = [...photos, ...untrackedDrivePhotos];
 
