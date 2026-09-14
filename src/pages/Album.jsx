@@ -21,12 +21,18 @@ export default function Album({ uploaderName }) {
   }, []);
 
   // Also pick up any photo that was added straight to the Drive folder
-  // rather than through this page's upload buttons. This list only
-  // refreshes on page load, not live like the ones above.
+  // rather than through this page's upload buttons. Firestore already
+  // updates live, but this list doesn't, so it's checked again every
+  // 20 seconds to catch anything added outside the app.
   useEffect(() => {
-    listPhotosFromDrive()
-      .then(setDrivePhotos)
-      .catch((err) => console.error('Could not list Drive photos', err));
+    function refreshDrivePhotos() {
+      listPhotosFromDrive()
+        .then(setDrivePhotos)
+        .catch((err) => console.error('Could not list Drive photos', err));
+    }
+    refreshDrivePhotos();
+    const interval = setInterval(refreshDrivePhotos, 20000);
+    return () => clearInterval(interval);
   }, []);
 
   // Drive photos that already have a matching database entry are skipped

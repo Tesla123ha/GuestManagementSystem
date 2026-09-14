@@ -21,10 +21,17 @@ export default function AdminAlbum() {
 
   // Also pick up any photo sitting in the Drive folder that never made it
   // into the database (added by hand, or an upload that failed partway).
+  // Firestore already updates live, but this list doesn't, so it's
+  // checked again every 20 seconds to catch anything added outside the app.
   useEffect(() => {
-    listPhotosFromDrive()
-      .then(setDrivePhotos)
-      .catch((err) => console.error('Could not list Drive photos', err));
+    function refreshDrivePhotos() {
+      listPhotosFromDrive()
+        .then(setDrivePhotos)
+        .catch((err) => console.error('Could not list Drive photos', err));
+    }
+    refreshDrivePhotos();
+    const interval = setInterval(refreshDrivePhotos, 20000);
+    return () => clearInterval(interval);
   }, []);
 
   // Drive photos that already have a matching database entry are skipped
