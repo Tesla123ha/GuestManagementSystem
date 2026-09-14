@@ -43,8 +43,14 @@ function handleUpload(request) {
   return jsonResponse({
     success: true,
     fileId: file.getId(),
-    url: 'https://drive.google.com/uc?export=view&id=' + file.getId(),
+    url: viewUrlFor(file.getId()),
   });
+}
+
+// Builds a link that actually shows the picture itself when placed in an
+// <img> tag, instead of a Drive preview page.
+function viewUrlFor(fileId) {
+  return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000';
 }
 
 function handleDelete(request) {
@@ -61,10 +67,13 @@ function handleList() {
   const results = [];
   while (files.hasNext()) {
     const file = files.next();
+    // A photo dropped into the folder by hand might still be private, so
+    // make sure it's actually viewable by anyone with the link too.
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     results.push({
       fileId: file.getId(),
       name: file.getName(),
-      url: 'https://drive.google.com/uc?export=view&id=' + file.getId(),
+      url: viewUrlFor(file.getId()),
     });
   }
   return jsonResponse({ success: true, files: results });
