@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '../firebase';
 import { deletePhotoFromDrive, listPhotosFromDrive } from '../googleDrive';
 
@@ -8,7 +8,7 @@ export default function AdminAlbum() {
   const [photos, setPhotos] = useState([]);
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
-  const [viewingPhoto, setViewingPhoto] = useState(null);
+  const [viewingIndex, setViewingIndex] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
 
   useEffect(() => {
@@ -45,6 +45,26 @@ export default function AdminAlbum() {
     ...photos.map((p) => ({ ...p, trackedInDatabase: true })),
     ...untrackedDrivePhotos,
   ];
+  const viewingPhoto = viewingIndex !== null ? displayPhotos[viewingIndex] : null;
+
+  function showPrevPhoto() {
+    setViewingIndex((i) => (i === null ? i : (i - 1 + displayPhotos.length) % displayPhotos.length));
+  }
+
+  function showNextPhoto() {
+    setViewingIndex((i) => (i === null ? i : (i + 1) % displayPhotos.length));
+  }
+
+  useEffect(() => {
+    if (viewingIndex === null) return undefined;
+    function handleKeyDown(e) {
+      if (e.key === 'ArrowLeft') showPrevPhoto();
+      if (e.key === 'ArrowRight') showNextPhoto();
+      if (e.key === 'Escape') setViewingIndex(null);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewingIndex, displayPhotos.length]);
 
   function requestDelete(photo) {
     setConfirmDeletePhoto(photo);
@@ -67,7 +87,9 @@ export default function AdminAlbum() {
         setDrivePhotos((prev) => prev.filter((f) => f.fileId !== photo.fileId));
       }
       // If the photo being deleted is open in the preview, close it too.
-      setViewingPhoto((current) => (current && current.id === photo.id ? null : current));
+      if (viewingPhoto && viewingPhoto.id === photo.id) {
+        setViewingIndex(null);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -86,11 +108,11 @@ export default function AdminAlbum() {
         <div className="empty-state">No photos have been added yet.</div>
       ) : (
         <div className="album-grid">
-          {displayPhotos.map((photo) => (
+          {displayPhotos.map((photo, index) => (
             <div
               key={photo.id}
               className="album-thumb album-thumb--admin"
-              onClick={() => setViewingPhoto(photo)}
+              onClick={() => setViewingIndex(index)}
               role="button"
               tabIndex={0}
             >
@@ -114,9 +136,9 @@ export default function AdminAlbum() {
       )}
 
       {viewingPhoto && (
-        <div className="modal-overlay" onClick={() => setViewingPhoto(null)}>
+        <div className="modal-overlay" onClick={() => setViewingIndex(null)}>
           <div className="album-lightbox" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="album-lightbox-close" onClick={() => setViewingPhoto(null)} aria-label="Close">
+            <button type="button" className="album-lightbox-close" onClick={() => setViewingIndex(null)} aria-label="Close">
               <X />
             </button>
             <button
@@ -128,6 +150,26 @@ export default function AdminAlbum() {
             >
               <Trash2 size={16} />
             </button>
+            {displayPhotos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="album-lightbox-nav album-lightbox-nav--prev"
+                  onClick={showPrevPhoto}
+                  aria-label="Previous photo"
+                >
+                  <ChevronLeft />
+                </button>
+                <button
+                  type="button"
+                  className="album-lightbox-nav album-lightbox-nav--next"
+                  onClick={showNextPhoto}
+                  aria-label="Next photo"
+                >
+                  <ChevronRight />
+                </button>
+              </>
+            )}
             <img src={viewingPhoto.imageUrl} alt={`Photo by ${viewingPhoto.uploaderName}`} />
             <p>{viewingPhoto.uploaderName}</p>
           </div>

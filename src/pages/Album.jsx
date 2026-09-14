@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { Camera, Upload, X } from 'lucide-react';
+import { Camera, Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '../firebase';
 import { uploadPhotoToDrive, listPhotosFromDrive } from '../googleDrive';
 
@@ -8,7 +8,7 @@ export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [viewingPhoto, setViewingPhoto] = useState(null);
+  const [viewingIndex, setViewingIndex] = useState(null);
   const cameraInputRef = useRef(null);
   const filesInputRef = useRef(null);
 
@@ -43,6 +43,26 @@ export default function Album({ uploaderName }) {
       uploaderName: f.name.replace(/\.[a-zA-Z0-9]+$/, '').replace(/-\d+$/, ''),
     }));
   const displayPhotos = [...photos, ...untrackedDrivePhotos];
+  const viewingPhoto = viewingIndex !== null ? displayPhotos[viewingIndex] : null;
+
+  function showPrevPhoto() {
+    setViewingIndex((i) => (i === null ? i : (i - 1 + displayPhotos.length) % displayPhotos.length));
+  }
+
+  function showNextPhoto() {
+    setViewingIndex((i) => (i === null ? i : (i + 1) % displayPhotos.length));
+  }
+
+  useEffect(() => {
+    if (viewingIndex === null) return undefined;
+    function handleKeyDown(e) {
+      if (e.key === 'ArrowLeft') showPrevPhoto();
+      if (e.key === 'ArrowRight') showNextPhoto();
+      if (e.key === 'Escape') setViewingIndex(null);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewingIndex, displayPhotos.length]);
 
   async function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
@@ -114,12 +134,12 @@ export default function Album({ uploaderName }) {
         <div className="empty-state">No photos yet. Be the first to add one!</div>
       ) : (
         <div className="album-grid">
-          {displayPhotos.map((photo) => (
+          {displayPhotos.map((photo, index) => (
             <button
               key={photo.id}
               type="button"
               className="album-thumb"
-              onClick={() => setViewingPhoto(photo)}
+              onClick={() => setViewingIndex(index)}
             >
               <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
               <span className="album-thumb-name">{photo.uploaderName}</span>
@@ -129,11 +149,31 @@ export default function Album({ uploaderName }) {
       )}
 
       {viewingPhoto && (
-        <div className="modal-overlay" onClick={() => setViewingPhoto(null)}>
+        <div className="modal-overlay" onClick={() => setViewingIndex(null)}>
           <div className="album-lightbox" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="album-lightbox-close" onClick={() => setViewingPhoto(null)} aria-label="Close">
+            <button type="button" className="album-lightbox-close" onClick={() => setViewingIndex(null)} aria-label="Close">
               <X />
             </button>
+            {displayPhotos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="album-lightbox-nav album-lightbox-nav--prev"
+                  onClick={showPrevPhoto}
+                  aria-label="Previous photo"
+                >
+                  <ChevronLeft />
+                </button>
+                <button
+                  type="button"
+                  className="album-lightbox-nav album-lightbox-nav--next"
+                  onClick={showNextPhoto}
+                  aria-label="Next photo"
+                >
+                  <ChevronRight />
+                </button>
+              </>
+            )}
             <img src={viewingPhoto.imageUrl} alt={`Photo by ${viewingPhoto.uploaderName}`} />
             <p>{viewingPhoto.uploaderName}</p>
           </div>

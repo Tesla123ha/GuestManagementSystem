@@ -1091,6 +1091,29 @@ a {
   opacity: 0.6;
 }
 
+.album-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: rgba(58, 46, 34, 0.55);
+  color: white;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-lightbox-nav--prev {
+  left: 10px;
+}
+
+.album-lightbox-nav--next {
+  right: 10px;
+}
+
 .confirm-modal {
   background: var(--white);
   border-radius: var(--radius);
