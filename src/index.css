@@ -1071,3 +1071,55 @@ a {
   align-items: center;
   justify-content: center;
 }
+
+.album-lightbox-delete {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  border: none;
+  background: rgba(198, 91, 78, 0.9);
+  color: white;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-lightbox-delete:disabled {
+  opacity: 0.6;
+}
+
+.confirm-modal {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 360px;
+  text-align: center;
+}
+
+.confirm-modal h3 {
+  margin: 0 0 8px;
+}
+
+.confirm-modal p {
+  margin: 0 0 20px;
+  color: var(--text-muted, #6b6b6b);
+}
+
+.confirm-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-danger {
+  background: rgba(198, 91, 78, 0.95);
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: rgba(198, 91, 78, 1);
+}

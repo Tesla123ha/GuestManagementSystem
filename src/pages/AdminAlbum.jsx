@@ -9,6 +9,7 @@ export default function AdminAlbum() {
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
   const [viewingPhoto, setViewingPhoto] = useState(null);
+  const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, 'albumPhotos'), orderBy('createdAt', 'desc'));
@@ -45,8 +46,14 @@ export default function AdminAlbum() {
     ...untrackedDrivePhotos,
   ];
 
-  async function handleDelete(photo) {
-    if (!window.confirm('Delete this photo for everyone?')) return;
+  function requestDelete(photo) {
+    setConfirmDeletePhoto(photo);
+  }
+
+  async function confirmDelete() {
+    const photo = confirmDeletePhoto;
+    if (!photo) return;
+    setConfirmDeletePhoto(null);
     setDeletingId(photo.id);
     try {
       if (photo.fileId) {
@@ -59,6 +66,8 @@ export default function AdminAlbum() {
         // instead of waiting for the page to be reloaded.
         setDrivePhotos((prev) => prev.filter((f) => f.fileId !== photo.fileId));
       }
+      // If the photo being deleted is open in the preview, close it too.
+      setViewingPhoto((current) => (current && current.id === photo.id ? null : current));
     } catch (err) {
       console.error(err);
     } finally {
@@ -92,7 +101,7 @@ export default function AdminAlbum() {
                 className="album-thumb-delete"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDelete(photo);
+                  requestDelete(photo);
                 }}
                 disabled={deletingId === photo.id}
                 aria-label="Delete photo"
@@ -110,8 +119,34 @@ export default function AdminAlbum() {
             <button type="button" className="album-lightbox-close" onClick={() => setViewingPhoto(null)} aria-label="Close">
               <X />
             </button>
+            <button
+              type="button"
+              className="album-lightbox-delete"
+              onClick={() => requestDelete(viewingPhoto)}
+              disabled={deletingId === viewingPhoto.id}
+              aria-label="Delete photo"
+            >
+              <Trash2 size={16} />
+            </button>
             <img src={viewingPhoto.imageUrl} alt={`Photo by ${viewingPhoto.uploaderName}`} />
             <p>{viewingPhoto.uploaderName}</p>
+          </div>
+        </div>
+      )}
+
+      {confirmDeletePhoto && (
+        <div className="modal-overlay" onClick={() => setConfirmDeletePhoto(null)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete this photo?</h3>
+            <p>This will remove it for everyone. This cannot be undone.</p>
+            <div className="confirm-modal-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setConfirmDeletePhoto(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger" onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
