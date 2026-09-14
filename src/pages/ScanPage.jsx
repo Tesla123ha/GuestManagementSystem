@@ -13,9 +13,10 @@ import {
   arrayUnion,
   serverTimestamp,
 } from 'firebase/firestore';
-import { Heart } from 'lucide-react';
+import { Heart, LayoutGrid, Image } from 'lucide-react';
 import { db } from '../firebase';
 import FloorPlan from './FloorPlan';
+import Album from './Album';
 
 const STORAGE_KEY = 'party_checkin_id';
 
@@ -37,6 +38,7 @@ export default function ScanPage() {
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [allCheckins, setAllCheckins] = useState([]);
+  const [activeTab, setActiveTab] = useState('table');
 
   // Load event name and guest screen messages
   useEffect(() => {
@@ -182,37 +184,58 @@ export default function ScanPage() {
     );
   }
 
-  // Step 2: waiting for admin to assign a table
-  if (checkin.status === 'waiting') {
-    return (
-      <div className="guest-screen">
-        <div className="guest-card">
-          <div className="eyebrow-dot"><Heart size={20} /></div>
-          <h1>Thanks, {checkin.fullName}!</h1>
-          <p>{waitingMessage || DEFAULT_WAITING_MESSAGE}</p>
-          <div className="line-number">#{queuePosition || checkin.scanOrder}</div>
-          <p style={{ marginTop: 0 }}>You are number {queuePosition || checkin.scanOrder} in line</p>
-          <div className="spinner" />
-        </div>
-      </div>
-    );
-  }
+  // Step 2 & 3: checked in. Show status up top, then let the guest switch
+  // between the table layout and the shared album underneath.
+  const isWaiting = checkin.status === 'waiting';
 
-  // Step 3: assigned, show table and highlight it on the floor plan
   return (
     <div className="guest-screen" style={{ alignItems: 'flex-start', paddingTop: 40 }}>
       <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
         <div className="guest-card" style={{ maxWidth: 'none', marginBottom: 24 }}>
           <div className="eyebrow-dot"><Heart size={20} /></div>
-          <h1>Welcome, {checkin.fullName}!</h1>
-          <p>
-            {seatedMessage
-              ? fillPlaceholders(seatedMessage, { name: checkin.fullName, table: checkin.tableNumber || '' })
-              : `You're seated at Table ${checkin.tableNumber || 'N/A'}.`}
-          </p>
+          {isWaiting ? (
+            <>
+              <h1>Thanks, {checkin.fullName}!</h1>
+              <p>{waitingMessage || DEFAULT_WAITING_MESSAGE}</p>
+              <div className="line-number">#{queuePosition || checkin.scanOrder}</div>
+              <p style={{ marginTop: 0 }}>You are number {queuePosition || checkin.scanOrder} in line</p>
+              <div className="spinner" />
+            </>
+          ) : (
+            <>
+              <h1>Welcome, {checkin.fullName}!</h1>
+              <p>
+                {seatedMessage
+                  ? fillPlaceholders(seatedMessage, { name: checkin.fullName, table: checkin.tableNumber || '' })
+                  : `You're seated at Table ${checkin.tableNumber || 'N/A'}.`}
+              </p>
+            </>
+          )}
         </div>
+
+        <div className="guest-tabs">
+          <button
+            type="button"
+            className={'guest-tab' + (activeTab === 'table' ? ' active' : '')}
+            onClick={() => setActiveTab('table')}
+          >
+            <LayoutGrid size={16} /> Table Layout
+          </button>
+          <button
+            type="button"
+            className={'guest-tab' + (activeTab === 'album' ? ' active' : '')}
+            onClick={() => setActiveTab('album')}
+          >
+            <Image size={16} /> Shared Album
+          </button>
+        </div>
+
         <div className="card">
-          <FloorPlan highlightCheckinId={checkin.id} />
+          {activeTab === 'table' ? (
+            <FloorPlan highlightCheckinId={isWaiting ? null : checkin.id} embedded />
+          ) : (
+            <Album uploaderName={checkin.fullName} />
+          )}
         </div>
       </div>
     </div>

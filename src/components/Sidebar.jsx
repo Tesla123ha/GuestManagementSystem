@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Gauge, ListChecks, LayoutGrid, ClipboardList, MapPin, Settings, ArrowLeft, X } from 'lucide-react';
+import { Gauge, ListChecks, LayoutGrid, ClipboardList, MapPin, Image, Settings, ArrowLeft, X } from 'lucide-react';
 
 const links = [
   { to: '/dashboard', label: 'Dashboard', icon: Gauge },
@@ -10,6 +10,7 @@ const links = [
   { to: '/tables', label: 'Tables', icon: LayoutGrid },
   { to: '/checkins', label: 'Check-Ins', icon: ClipboardList },
   { to: '/floor-plan-admin', label: 'Floor Plan', icon: MapPin },
+  { to: '/album', label: 'Shared Album', icon: Image },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

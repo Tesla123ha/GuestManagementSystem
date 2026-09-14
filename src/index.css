@@ -930,3 +930,134 @@ a {
   padding: 50px 20px;
   color: var(--ink-soft);
 }
+
+/* ---------- Shared Album ---------- */
+
+.guest-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.guest-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.guest-tab.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+}
+
+.album-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.album-toolbar .btn {
+  gap: 8px;
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.album-thumb {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--white);
+  padding: 0;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.album-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.album-thumb-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(to top, rgba(58, 46, 34, 0.75), transparent);
+  text-align: left;
+}
+
+.album-thumb--admin .album-thumb-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(198, 91, 78, 0.9);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-thumb--admin .album-thumb-delete:disabled {
+  opacity: 0.6;
+}
+
+.album-lightbox {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  text-align: center;
+}
+
+.album-lightbox img {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 10px;
+  display: block;
+  margin: 0 auto 10px;
+}
+
+.album-lightbox-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  background: var(--bg);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
