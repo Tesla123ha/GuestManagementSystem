@@ -47,7 +47,11 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
   }, []);
 
   // Auto-place any table that has never been given a grid position yet.
+  // Only the admin view does this, since guests aren't allowed to change a
+  // table's position, only its occupant list.
   useEffect(() => {
+    if (highlightCheckinId) return;
+
     const occupied = new Set();
     tables.forEach((t) => {
       if (isInBounds(t, gridSize)) {
@@ -66,7 +70,7 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
       autoAssignedIds.current.add(t.id);
       updateDoc(doc(db, 'tables', t.id), { row: spot.row, col: spot.col }).catch(() => {});
     });
-  }, [tables, gridSize]);
+  }, [tables, gridSize, highlightCheckinId]);
 
   function isInBounds(table, size) {
     return (
