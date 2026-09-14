@@ -24,6 +24,9 @@ function doPost(e) {
     if (request.action === 'delete') {
       return handleDelete(request);
     }
+    if (request.action === 'list') {
+      return handleList();
+    }
     return jsonResponse({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResponse({ success: false, error: err.message });
@@ -48,6 +51,23 @@ function handleDelete(request) {
   const file = DriveApp.getFileById(request.fileId);
   file.setTrashed(true);
   return jsonResponse({ success: true });
+}
+
+// Lists every photo currently sitting in the Drive folder, including ones
+// added straight to Drive instead of through the app.
+function handleList() {
+  const folder = DriveApp.getFolderById(FOLDER_ID);
+  const files = folder.getFiles();
+  const results = [];
+  while (files.hasNext()) {
+    const file = files.next();
+    results.push({
+      fileId: file.getId(),
+      name: file.getName(),
+      url: 'https://drive.google.com/uc?export=view&id=' + file.getId(),
+    });
+  }
+  return jsonResponse({ success: true, files: results });
 }
 
 function jsonResponse(obj) {

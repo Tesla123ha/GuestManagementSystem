@@ -59,3 +59,10 @@ export async function deletePhotoFromDrive(fileId) {
   if (!fileId) return;
   await callScript({ action: 'delete', fileId });
 }
+
+// Lists every photo currently in the Drive folder, including ones added
+// straight to Drive instead of through this app's upload buttons.
+export async function listPhotosFromDrive() {
+  const result = await callScript({ action: 'list' });
+  return result.files || [];
+}

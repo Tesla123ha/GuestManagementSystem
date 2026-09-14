@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { Camera, X } from 'lucide-react';
+import { Camera, Upload, X } from 'lucide-react';
 import { db } from '../firebase';
-import { uploadPhotoToDrive } from '../googleDrive';
+import { uploadPhotoToDrive, listPhotosFromDrive } from '../googleDrive';
 
 export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
+  const [drivePhotos, setDrivePhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState(null);
-  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const filesInputRef = useRef(null);
 
   useEffect(() => {
     const q = query(collection(db, 'albumPhotos'), orderBy('createdAt', 'desc'));
@@ -17,6 +19,28 @@ export default function Album({ uploaderName }) {
     });
     return unsub;
   }, []);
+
+  // Also pick up any photo that was added straight to the Drive folder
+  // rather than through this page's upload buttons. This list only
+  // refreshes on page load, not live like the ones above.
+  useEffect(() => {
+    listPhotosFromDrive()
+      .then(setDrivePhotos)
+      .catch((err) => console.error('Could not list Drive photos', err));
+  }, []);
+
+  // Drive photos that already have a matching database entry are skipped
+  // here, so every photo only ever shows up once.
+  const trackedFileIds = new Set(photos.map((p) => p.fileId));
+  const untrackedDrivePhotos = drivePhotos
+    .filter((f) => !trackedFileIds.has(f.fileId))
+    .map((f) => ({
+      id: f.fileId,
+      fileId: f.fileId,
+      imageUrl: f.url,
+      uploaderName: f.name.replace(/\.[a-zA-Z0-9]+$/, ''),
+    }));
+  const displayPhotos = [...photos, ...untrackedDrivePhotos];
 
   async function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
@@ -35,7 +59,8 @@ export default function Album({ uploaderName }) {
       console.error(err);
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
+      if (filesInputRef.current) filesInputRef.current.value = '';
     }
   }
 
@@ -46,30 +71,48 @@ export default function Album({ uploaderName }) {
           <h2 style={{ margin: 0 }}>Shared Album</h2>
           <p style={{ margin: '4px 0 0' }}>Add a photo for everyone to see.</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => fileInputRef.current && fileInputRef.current.click()}
-          disabled={uploading}
-        >
-          <Camera size={18} />
-          {uploading ? 'Uploading...' : 'Add Photo'}
-        </button>
+        <div className="album-toolbar-actions">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => cameraInputRef.current && cameraInputRef.current.click()}
+            disabled={uploading}
+          >
+            <Camera size={18} />
+            {uploading ? 'Uploading...' : 'Take Photo'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => filesInputRef.current && filesInputRef.current.click()}
+            disabled={uploading}
+          >
+            <Upload size={18} />
+            {uploading ? 'Uploading...' : 'Upload from Files'}
+          </button>
+        </div>
         <input
-          ref={fileInputRef}
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
+        <input
+          ref={filesInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
       </div>
 
-      {photos.length === 0 ? (
+      {displayPhotos.length === 0 ? (
         <div className="empty-state">No photos yet. Be the first to add one!</div>
       ) : (
         <div className="album-grid">
-          {photos.map((photo) => (
+          {displayPhotos.map((photo) => (
             <button
               key={photo.id}
               type="button"

@@ -973,6 +973,12 @@ a {
   gap: 8px;
 }
 
+.album-toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .album-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
