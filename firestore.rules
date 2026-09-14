@@ -33,15 +33,17 @@ service cloud.firestore {
 
     // Everyone can view the tables so the live floor plan works for guests.
     // Guests may also add themselves to a table's occupantIds when the scan
-    // page auto-seats them (one seat at a time, nothing else changes).
-    // Only signed-in admins can create tables, delete tables, or change
-    // anything besides occupantIds.
+    // page auto-seats them (nothing else changes, and the list can only grow
+    // or stay the same for a guest, never shrink; that only guards against
+    // repeat or duplicate seating attempts, it does not remove anyone).
+    // Only signed-in admins can create tables, delete tables, or remove
+    // someone from occupantIds.
     match /tables/{tableId} {
       allow read: if true;
       allow create, delete: if request.auth != null;
       allow update: if request.auth != null || (
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['occupantIds'])
-        && request.resource.data.occupantIds.size() == resource.data.occupantIds.size() + 1
+        && request.resource.data.occupantIds.size() >= resource.data.occupantIds.size()
       );
     }
 
