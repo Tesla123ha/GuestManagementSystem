@@ -1016,6 +1016,10 @@ a {
   text-align: left;
 }
 
+.album-thumb--admin {
+  cursor: pointer;
+}
+
 .album-thumb--admin .album-thumb-delete {
   position: absolute;
   top: 6px;

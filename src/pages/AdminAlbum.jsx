@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { db } from '../firebase';
 import { deletePhotoFromDrive, listPhotosFromDrive } from '../googleDrive';
 
@@ -8,6 +8,7 @@ export default function AdminAlbum() {
   const [photos, setPhotos] = useState([]);
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
+  const [viewingPhoto, setViewingPhoto] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, 'albumPhotos'), orderBy('createdAt', 'desc'));
@@ -77,13 +78,22 @@ export default function AdminAlbum() {
       ) : (
         <div className="album-grid">
           {displayPhotos.map((photo) => (
-            <div key={photo.id} className="album-thumb album-thumb--admin">
+            <div
+              key={photo.id}
+              className="album-thumb album-thumb--admin"
+              onClick={() => setViewingPhoto(photo)}
+              role="button"
+              tabIndex={0}
+            >
               <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
               <span className="album-thumb-name">{photo.uploaderName}</span>
               <button
                 type="button"
                 className="album-thumb-delete"
-                onClick={() => handleDelete(photo)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(photo);
+                }}
                 disabled={deletingId === photo.id}
                 aria-label="Delete photo"
               >
@@ -91,6 +101,18 @@ export default function AdminAlbum() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {viewingPhoto && (
+        <div className="modal-overlay" onClick={() => setViewingPhoto(null)}>
+          <div className="album-lightbox" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="album-lightbox-close" onClick={() => setViewingPhoto(null)} aria-label="Close">
+              <X />
+            </button>
+            <img src={viewingPhoto.imageUrl} alt={`Photo by ${viewingPhoto.uploaderName}`} />
+            <p>{viewingPhoto.uploaderName}</p>
+          </div>
         </div>
       )}
     </div>
