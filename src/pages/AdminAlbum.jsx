@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
 import { Trash2 } from 'lucide-react';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
+import { deletePhotoFromDrive } from '../googleDrive';
 
 export default function AdminAlbum() {
   const [photos, setPhotos] = useState([]);
@@ -20,8 +20,8 @@ export default function AdminAlbum() {
     if (!window.confirm('Delete this photo for everyone?')) return;
     setDeletingId(photo.id);
     try {
-      if (photo.storagePath) {
-        await deleteObject(ref(storage, photo.storagePath)).catch(() => {});
+      if (photo.fileId) {
+        await deletePhotoFromDrive(photo.fileId).catch(() => {});
       }
       await deleteDoc(doc(db, 'albumPhotos', photo.id));
     } catch (err) {

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Camera, X } from 'lucide-react';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
+import { uploadPhotoToDrive } from '../googleDrive';
 
 export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
@@ -25,14 +25,10 @@ export default function Album({ uploaderName }) {
     setError('');
     setUploading(true);
     try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const storagePath = `album/${fileName}`;
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, file);
-      const imageUrl = await getDownloadURL(storageRef);
+      const { imageUrl, fileId } = await uploadPhotoToDrive(file);
       await addDoc(collection(db, 'albumPhotos'), {
         imageUrl,
-        storagePath,
+        fileId,
         uploaderName: uploaderName || 'A guest',
         createdAt: serverTimestamp(),
       });

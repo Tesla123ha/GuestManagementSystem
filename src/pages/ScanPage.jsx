@@ -213,30 +213,34 @@ export default function ScanPage() {
           )}
         </div>
 
-        <div className="guest-tabs">
-          <button
-            type="button"
-            className={'guest-tab' + (activeTab === 'table' ? ' active' : '')}
-            onClick={() => setActiveTab('table')}
-          >
-            <LayoutGrid size={16} /> Table Layout
-          </button>
-          <button
-            type="button"
-            className={'guest-tab' + (activeTab === 'album' ? ' active' : '')}
-            onClick={() => setActiveTab('album')}
-          >
-            <Image size={16} /> Shared Album
-          </button>
-        </div>
+        {!isWaiting && (
+          <>
+            <div className="guest-tabs">
+              <button
+                type="button"
+                className={'guest-tab' + (activeTab === 'table' ? ' active' : '')}
+                onClick={() => setActiveTab('table')}
+              >
+                <LayoutGrid size={16} /> Table Layout
+              </button>
+              <button
+                type="button"
+                className={'guest-tab' + (activeTab === 'album' ? ' active' : '')}
+                onClick={() => setActiveTab('album')}
+              >
+                <Image size={16} /> Shared Album
+              </button>
+            </div>
 
-        <div className="card">
-          {activeTab === 'table' ? (
-            <FloorPlan highlightCheckinId={isWaiting ? null : checkin.id} embedded />
-          ) : (
-            <Album uploaderName={checkin.fullName} />
-          )}
-        </div>
+            <div className="card">
+              {activeTab === 'table' ? (
+                <FloorPlan highlightCheckinId={checkin.id} embedded />
+              ) : (
+                <Album uploaderName={checkin.fullName} />
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
