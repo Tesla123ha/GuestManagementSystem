@@ -12,7 +12,7 @@
 // 6. Copy the Web app URL you get after deploying.
 // 7. Put that URL in your .env file as VITE_GOOGLE_SCRIPT_URL (see .env.example).
 
-const FOLDER_ID = 'https://drive.google.com/drive/u/6/folders/1cWPIdUXNbu7jMebpo5c9skJvEFDgGQY_';
+const FOLDER_ID = '1cWPIdUXNbu7jMebpo5c9skJvEFDgGQY_';
 
 function doPost(e) {
   try {
