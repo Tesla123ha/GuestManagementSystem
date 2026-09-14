@@ -68,8 +68,15 @@ function handleList() {
   while (files.hasNext()) {
     const file = files.next();
     // A photo dropped into the folder by hand might still be private, so
-    // make sure it's actually viewable by anyone with the link too.
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    // make sure it's actually viewable by anyone with the link too. Some
+    // files (like ones added from a different Google account) won't let
+    // this script change their sharing, so skip just that step for those
+    // instead of losing the whole list over one file.
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (err) {
+      // Move on and still list the file, using whatever access it already has.
+    }
     results.push({
       fileId: file.getId(),
       name: file.getName(),
