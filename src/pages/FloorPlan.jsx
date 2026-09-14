@@ -43,6 +43,8 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
         setRowsInput(rows);
         setColsInput(cols);
       }
+    }).catch((err) => {
+      console.error('Could not load floor plan settings, using the default grid size instead.', err);
     });
   }, []);
 
