@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { Camera, Upload, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Camera, Upload, X, ChevronLeft, ChevronRight, ChevronDown, Check, Trash2 } from 'lucide-react';
 import { db } from '../firebase';
 import { uploadPhotoToDrive, listPhotosFromDrive, deletePhotoFromDrive } from '../googleDrive';
 
@@ -13,6 +13,7 @@ export default function Album({ uploaderName, tableNumber }) {
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
   const [tableFilter, setTableFilter] = useState('all'); // all | 'unknown' | a table number as a string
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const cameraInputRef = useRef(null);
   const filesInputRef = useRef(null);
 
@@ -71,6 +72,12 @@ export default function Album({ uploaderName, tableNumber }) {
     new Set(displayPhotos.filter((p) => !hasNoTable(p)).map((p) => p.tableNumber))
   ).sort((a, b) => a - b);
   const hasUnknownTablePhotos = displayPhotos.some(hasNoTable);
+  const tableFilterOptions = [
+    { value: 'all', label: 'All Tables' },
+    ...availableTables.map((n) => ({ value: String(n), label: `Table ${n}` })),
+    ...(hasUnknownTablePhotos ? [{ value: 'unknown', label: 'Unknown Table' }] : []),
+  ];
+  const currentTableFilterLabel = (tableFilterOptions.find((o) => o.value === tableFilter) || tableFilterOptions[0]).label;
   const filteredPhotos = displayPhotos.filter((p) => {
     if (tableFilter === 'all') return true;
     if (tableFilter === 'unknown') return hasNoTable(p);
@@ -210,17 +217,48 @@ export default function Album({ uploaderName, tableNumber }) {
       {(availableTables.length > 0 || hasUnknownTablePhotos) && (
         <div className="filter-select-wrap" style={{ marginBottom: 16 }}>
           <label className="filter-select-label">Table</label>
-          <select
-            className={'filter-select' + (tableFilter !== 'all' ? ' filter-select--active' : '')}
-            value={tableFilter}
-            onChange={(e) => setTableFilter(e.target.value)}
+          <button
+            type="button"
+            className={'filter-select-button' + (tableFilter !== 'all' ? ' filter-select-button--active' : '')}
+            onClick={() => setFilterModalOpen(true)}
           >
-            <option value="all">All Tables</option>
-            {availableTables.map((n) => (
-              <option key={n} value={String(n)}>Table {n}</option>
-            ))}
-            {hasUnknownTablePhotos && <option value="unknown">Unknown Table</option>}
-          </select>
+            {currentTableFilterLabel}
+            <ChevronDown size={16} />
+          </button>
+        </div>
+      )}
+
+      {filterModalOpen && (
+        <div className="modal-overlay" onClick={() => setFilterModalOpen(false)}>
+          <div className="table-filter-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="table-filter-modal-header">
+              <h3>Filter by Table</h3>
+              <button
+                type="button"
+                className="table-filter-modal-close"
+                onClick={() => setFilterModalOpen(false)}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="table-filter-options">
+              {tableFilterOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={'table-filter-option' + (tableFilter === opt.value ? ' table-filter-option--active' : '')}
+                  onClick={() => {
+                    setTableFilter(opt.value);
+                    setFilterModalOpen(false);
+                  }}
+                >
+                  {opt.label}
+                  {tableFilter === opt.value && <Check size={16} />}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
