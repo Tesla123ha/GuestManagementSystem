@@ -994,6 +994,7 @@ a {
   padding: 0;
   aspect-ratio: 1 / 1;
   display: block;
+  cursor: pointer;
 }
 
 .album-thumb img {
@@ -1020,7 +1021,7 @@ a {
   cursor: pointer;
 }
 
-.album-thumb--admin .album-thumb-delete {
+.album-thumb-delete {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -1035,7 +1036,7 @@ a {
   justify-content: center;
 }
 
-.album-thumb--admin .album-thumb-delete:disabled {
+.album-thumb-delete:disabled {
   opacity: 0.6;
 }
 

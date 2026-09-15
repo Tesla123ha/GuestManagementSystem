@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { Camera, Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { Camera, Upload, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { db } from '../firebase';
-import { uploadPhotoToDrive, listPhotosFromDrive } from '../googleDrive';
+import { uploadPhotoToDrive, listPhotosFromDrive, deletePhotoFromDrive } from '../googleDrive';
 
 export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [viewingIndex, setViewingIndex] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
   const cameraInputRef = useRef(null);
   const filesInputRef = useRef(null);
 
@@ -47,9 +49,20 @@ export default function Album({ uploaderName }) {
       // Our own uploads are named "Name-1234567890.jpg"; strip the file
       // extension and that trailing timestamp so just the name is left.
       uploaderName: f.name.replace(/\.[a-zA-Z0-9]+$/, '').replace(/-\d+$/, ''),
+      trackedInDatabase: false,
     }));
-  const displayPhotos = [...photos, ...untrackedDrivePhotos];
+  const displayPhotos = [
+    ...photos.map((p) => ({ ...p, trackedInDatabase: true })),
+    ...untrackedDrivePhotos,
+  ];
   const viewingPhoto = viewingIndex !== null ? displayPhotos[viewingIndex] : null;
+
+  // A guest can only delete a photo that's tracked in the database and
+  // whose stored uploader name matches their own name from check-in.
+  function isOwnPhoto(photo) {
+    if (!photo.trackedInDatabase || !uploaderName) return false;
+    return photo.uploaderName.trim().toLowerCase() === uploaderName.trim().toLowerCase();
+  }
 
   function showPrevPhoto() {
     setViewingIndex((i) => (i === null ? i : (i - 1 + displayPhotos.length) % displayPhotos.length));
@@ -69,6 +82,31 @@ export default function Album({ uploaderName }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewingIndex, displayPhotos.length]);
+
+  function requestDelete(photo) {
+    setConfirmDeletePhoto(photo);
+  }
+
+  async function confirmDelete() {
+    const photo = confirmDeletePhoto;
+    if (!photo) return;
+    setConfirmDeletePhoto(null);
+    setDeletingId(photo.id);
+    try {
+      if (photo.fileId) {
+        await deletePhotoFromDrive(photo.fileId).catch(() => {});
+      }
+      await deleteDoc(doc(db, 'albumPhotos', photo.id));
+      // If the photo being deleted is open in the preview, close it too.
+      if (viewingPhoto && viewingPhoto.id === photo.id) {
+        setViewingIndex(null);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
@@ -141,15 +179,30 @@ export default function Album({ uploaderName }) {
       ) : (
         <div className="album-grid">
           {displayPhotos.map((photo, index) => (
-            <button
+            <div
               key={photo.id}
-              type="button"
               className="album-thumb"
               onClick={() => setViewingIndex(index)}
+              role="button"
+              tabIndex={0}
             >
               <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
               <span className="album-thumb-name">{photo.uploaderName}</span>
-            </button>
+              {isOwnPhoto(photo) && (
+                <button
+                  type="button"
+                  className="album-thumb-delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    requestDelete(photo);
+                  }}
+                  disabled={deletingId === photo.id}
+                  aria-label="Delete your photo"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -160,6 +213,17 @@ export default function Album({ uploaderName }) {
             <button type="button" className="album-lightbox-close" onClick={() => setViewingIndex(null)} aria-label="Close">
               <X />
             </button>
+            {isOwnPhoto(viewingPhoto) && (
+              <button
+                type="button"
+                className="album-lightbox-delete"
+                onClick={() => requestDelete(viewingPhoto)}
+                disabled={deletingId === viewingPhoto.id}
+                aria-label="Delete your photo"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
             {displayPhotos.length > 1 && (
               <>
                 <button
@@ -182,6 +246,23 @@ export default function Album({ uploaderName }) {
             )}
             <img src={viewingPhoto.imageUrl} alt={`Photo by ${viewingPhoto.uploaderName}`} />
             <p>{viewingPhoto.uploaderName}</p>
+          </div>
+        </div>
+      )}
+
+      {confirmDeletePhoto && (
+        <div className="modal-overlay" onClick={() => setConfirmDeletePhoto(null)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete this photo?</h3>
+            <p>This will remove it for everyone. This cannot be undone.</p>
+            <div className="confirm-modal-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setConfirmDeletePhoto(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger" onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
