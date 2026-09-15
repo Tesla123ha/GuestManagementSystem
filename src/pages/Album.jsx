@@ -8,6 +8,7 @@ export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
   const [viewingIndex, setViewingIndex] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
@@ -112,24 +113,31 @@ export default function Album({ uploaderName }) {
   }
 
   async function handleFileChange(e) {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setUploading(true);
-    try {
-      const { imageUrl, fileId } = await uploadPhotoToDrive(file, uploaderName);
-      await addDoc(collection(db, 'albumPhotos'), {
-        imageUrl,
-        fileId,
-        uploaderName: uploaderName || 'A guest',
-        createdAt: serverTimestamp(),
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUploading(false);
-      if (cameraInputRef.current) cameraInputRef.current.value = '';
-      if (filesInputRef.current) filesInputRef.current.value = '';
+    // Files are uploaded one at a time, on purpose, rather than all at once.
+    // Sending them all together puts more load on Google's servers, which
+    // is exactly what causes the broken-reply problem this app already
+    // retries around.
+    for (let i = 0; i < files.length; i++) {
+      setUploadProgress({ current: i + 1, total: files.length });
+      try {
+        const { imageUrl, fileId } = await uploadPhotoToDrive(files[i], uploaderName);
+        await addDoc(collection(db, 'albumPhotos'), {
+          imageUrl,
+          fileId,
+          uploaderName: uploaderName || 'A guest',
+          createdAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
+    setUploading(false);
+    setUploadProgress(null);
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (filesInputRef.current) filesInputRef.current.value = '';
   }
 
   return (
@@ -147,7 +155,9 @@ export default function Album({ uploaderName }) {
             disabled={uploading}
           >
             <Camera size={18} />
-            {uploading ? 'Uploading...' : 'Take Photo'}
+            {uploading
+              ? (uploadProgress ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...` : 'Uploading...')
+              : 'Take Photo'}
           </button>
           <button
             type="button"
@@ -156,7 +166,9 @@ export default function Album({ uploaderName }) {
             disabled={uploading}
           >
             <Upload size={18} />
-            {uploading ? 'Uploading...' : 'Upload from Files'}
+            {uploading
+              ? (uploadProgress ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...` : 'Uploading...')
+              : 'Upload from Files'}
           </button>
         </div>
         <input
@@ -171,6 +183,7 @@ export default function Album({ uploaderName }) {
           ref={filesInputRef}
           type="file"
           accept="image/*"
+          multiple
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
