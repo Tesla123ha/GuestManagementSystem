@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, getDocs } from 'firebase/firestore';
-import { Trash2, X, ChevronDown, Check, History } from 'lucide-react';
+import { Trash2, X, ChevronDown, Check, History, Eye, EyeOff } from 'lucide-react';
 import { db } from '../firebase';
 
 export default function Messages() {
@@ -12,6 +12,7 @@ export default function Messages() {
   const [historyMessage, setHistoryMessage] = useState(null);
   const [historyEntries, setHistoryEntries] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [actionsHidden, setActionsHidden] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'guestMessages'), orderBy('createdAt', 'desc'));
@@ -72,9 +73,15 @@ export default function Messages() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Messages</h2>
-        <p>Every note guests have left for the celebrant.</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h2>Messages</h2>
+          <p>Every note guests have left for the celebrant.</p>
+        </div>
+        <button type="button" className="btn btn-outline" onClick={() => setActionsHidden((v) => !v)}>
+          {actionsHidden ? <Eye size={16} /> : <EyeOff size={16} />}
+          {actionsHidden ? 'Show Actions' : 'Hide Actions'}
+        </button>
       </div>
 
       {(availableTables.length > 0 || hasUnknownTableMessages) && (
@@ -133,27 +140,29 @@ export default function Messages() {
         <div className="message-grid">
           {filteredMessages.map((msg) => (
             <div key={msg.id} className="message-card">
-              <div className="message-card-actions">
-                {msg.editCount > 0 && (
+              {!actionsHidden && (
+                <div className="message-card-actions">
+                  {msg.editCount > 0 && (
+                    <button
+                      type="button"
+                      className="message-card-history"
+                      onClick={() => openHistory(msg)}
+                      aria-label="View edit history"
+                    >
+                      <History size={16} />
+                    </button>
+                  )}
                   <button
                     type="button"
-                    className="message-card-history"
-                    onClick={() => openHistory(msg)}
-                    aria-label="View edit history"
+                    className="message-card-delete"
+                    onClick={() => requestDelete(msg)}
+                    disabled={deletingId === msg.id}
+                    aria-label="Delete message"
                   >
-                    <History size={16} />
+                    <Trash2 size={16} />
                   </button>
-                )}
-                <button
-                  type="button"
-                  className="message-card-delete"
-                  onClick={() => requestDelete(msg)}
-                  disabled={deletingId === msg.id}
-                  aria-label="Delete message"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
+                </div>
+              )}
               <p className="message-card-text">{msg.message}</p>
               <div className="message-card-signature">- {msg.guestName || 'A guest'}</div>
             </div>
