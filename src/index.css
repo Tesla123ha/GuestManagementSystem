@@ -1271,6 +1271,19 @@ a {
   margin-top: 12px;
 }
 
+.message-view {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 18px;
+}
+
+.message-view-text {
+  margin: 0 0 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .message-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -1302,6 +1315,15 @@ a {
   gap: 4px 10px;
   font-size: 0.8rem;
   color: var(--ink-soft);
+}
+
+.message-card-signature {
+  margin-top: auto;
+  align-self: flex-end;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  text-align: right;
 }
 
 .message-card-actions {

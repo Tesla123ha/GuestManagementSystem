@@ -9,19 +9,21 @@ import {
   serverTimestamp,
   increment,
 } from 'firebase/firestore';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Pencil } from 'lucide-react';
 import { db } from '../firebase';
 
 const MAX_LENGTH = 500;
 
 // Lets a checked-in guest write a note for the celebrant. Each guest gets
-// exactly one message, stored under their own check-in id, and can come
-// back to this tab and edit it. Editing keeps the old wording in a
-// history list, which only admins can see; the guest never sees it.
+// exactly one message, stored under their own check-in id. Once it's
+// saved, this shows the message as read-only with an Edit button, rather
+// than leaving the text box sitting open. Editing keeps the old wording
+// in a history list that only admins can see, the guest never sees it.
 export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
   const [loaded, setLoaded] = useState(false);
   const [existingMessage, setExistingMessage] = useState(null);
   const [text, setText] = useState('');
+  const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [wasFirstSaveJustNow, setWasFirstSaveJustNow] = useState(false);
@@ -36,6 +38,9 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
           const data = snap.data();
           setExistingMessage(data.message || '');
           setText(data.message || '');
+        } else {
+          // No message yet, open straight to the text box.
+          setEditing(true);
         }
       })
       .catch((err) => console.error(err))
@@ -82,11 +87,23 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
       setExistingMessage(trimmed);
       setWasFirstSaveJustNow(isFirstSave);
       setJustSaved(true);
+      setEditing(false);
     } catch (err) {
       console.error(err);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function startEditing() {
+    setText(existingMessage || '');
+    setJustSaved(false);
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    setText(existingMessage || '');
+    setEditing(false);
   }
 
   if (!loaded) return null;
@@ -101,31 +118,44 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="field">
-        <textarea
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            setJustSaved(false);
-          }}
-          placeholder="Write your message here..."
-          maxLength={MAX_LENGTH}
-          rows={5}
-          required
-        />
-        <div className="message-form-footer">
-          <span className="message-char-count">{text.length}/{MAX_LENGTH}</span>
-          <button type="submit" className="btn btn-primary" disabled={submitting || !text.trim()}>
-            <MessageSquare size={18} />
-            {submitting ? 'Saving...' : existingMessage !== null ? 'Update Message' : 'Save Message'}
+      {editing ? (
+        <form onSubmit={handleSubmit} className="field">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Write your message here..."
+            maxLength={MAX_LENGTH}
+            rows={5}
+            required
+          />
+          <div className="message-form-footer">
+            <span className="message-char-count">{text.length}/{MAX_LENGTH}</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {existingMessage !== null && (
+                <button type="button" className="btn btn-outline" onClick={cancelEditing} disabled={submitting}>
+                  Cancel
+                </button>
+              )}
+              <button type="submit" className="btn btn-primary" disabled={submitting || !text.trim()}>
+                <MessageSquare size={18} />
+                {submitting ? 'Saving...' : existingMessage !== null ? 'Update Message' : 'Save Message'}
+              </button>
+            </div>
+          </div>
+        </form>
+      ) : (
+        <div className="message-view">
+          {justSaved && (
+            <p className="message-sent-note">
+              {wasFirstSaveJustNow ? 'Thanks! Your message was saved.' : 'Your message was updated.'}
+            </p>
+          )}
+          <p className="message-view-text">{existingMessage}</p>
+          <button type="button" className="btn btn-outline" onClick={startEditing}>
+            <Pencil size={16} />
+            Edit Message
           </button>
         </div>
-      </form>
-
-      {justSaved && (
-        <p className="message-sent-note">
-          {wasFirstSaveJustNow ? 'Thanks! Your message was saved.' : 'Your message was updated.'}
-        </p>
       )}
     </div>
   );
