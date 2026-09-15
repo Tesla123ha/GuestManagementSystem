@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { Trash2, X, ChevronDown, Check } from 'lucide-react';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { Trash2, X, ChevronDown, Check, History } from 'lucide-react';
 import { db } from '../firebase';
 
 export default function Messages() {
@@ -9,6 +9,9 @@ export default function Messages() {
   const [confirmDeleteMessage, setConfirmDeleteMessage] = useState(null);
   const [tableFilter, setTableFilter] = useState('all'); // all | 'unknown' | a table number as a string
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [historyMessage, setHistoryMessage] = useState(null);
+  const [historyEntries, setHistoryEntries] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'guestMessages'), orderBy('createdAt', 'desc'));
@@ -41,6 +44,16 @@ export default function Messages() {
 
   function requestDelete(msg) {
     setConfirmDeleteMessage(msg);
+  }
+
+  function openHistory(msg) {
+    setHistoryMessage(msg);
+    setHistoryLoading(true);
+    const q = query(collection(db, 'guestMessages', msg.id, 'history'), orderBy('editedAt', 'desc'));
+    getDocs(q)
+      .then((snap) => setHistoryEntries(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+      .catch((err) => console.error(err))
+      .finally(() => setHistoryLoading(false));
   }
 
   async function confirmDelete() {
@@ -120,23 +133,73 @@ export default function Messages() {
         <div className="message-grid">
           {filteredMessages.map((msg) => (
             <div key={msg.id} className="message-card">
-              <button
-                type="button"
-                className="message-card-delete"
-                onClick={() => requestDelete(msg)}
-                disabled={deletingId === msg.id}
-                aria-label="Delete message"
-              >
-                <Trash2 size={16} />
-              </button>
+              <div className="message-card-actions">
+                {msg.editCount > 0 && (
+                  <button
+                    type="button"
+                    className="message-card-history"
+                    onClick={() => openHistory(msg)}
+                    aria-label="View edit history"
+                  >
+                    <History size={16} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="message-card-delete"
+                  onClick={() => requestDelete(msg)}
+                  disabled={deletingId === msg.id}
+                  aria-label="Delete message"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
               <p className="message-card-text">{msg.message}</p>
               <div className="message-card-meta">
                 <span>{msg.guestName || 'A guest'}</span>
                 {!hasNoTable(msg) && <span>Table {msg.tableNumber}</span>}
                 <span>{msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ''}</span>
+                {msg.editCount > 0 && <span>Edited {msg.editCount}x</span>}
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {historyMessage && (
+        <div className="modal-overlay" onClick={() => setHistoryMessage(null)}>
+          <div className="history-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="table-filter-modal-header">
+              <h3>Edit History · {historyMessage.guestName || 'A guest'}</h3>
+              <button
+                type="button"
+                className="table-filter-modal-close"
+                onClick={() => setHistoryMessage(null)}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="history-entry history-entry--current">
+              <p className="message-card-text">{historyMessage.message}</p>
+              <span className="message-card-meta">
+                Current version ·{' '}
+                {historyMessage.updatedAt?.toDate ? historyMessage.updatedAt.toDate().toLocaleString() : ''}
+              </span>
+            </div>
+            {historyLoading ? (
+              <div className="empty-state">Loading...</div>
+            ) : (
+              historyEntries.map((entry) => (
+                <div key={entry.id} className="history-entry">
+                  <p className="message-card-text">{entry.message}</p>
+                  <span className="message-card-meta">
+                    Replaced {entry.editedAt?.toDate ? entry.editedAt.toDate().toLocaleString() : ''}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 

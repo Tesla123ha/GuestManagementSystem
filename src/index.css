@@ -1304,16 +1304,27 @@ a {
   color: var(--ink-soft);
 }
 
-.message-card-delete {
+.message-card-actions {
   position: absolute;
   top: 14px;
   right: 14px;
+  display: flex;
+  gap: 6px;
+}
+
+.message-card-history,
+.message-card-delete {
+  position: static;
   background: none;
   border: none;
   color: var(--ink-soft);
   cursor: pointer;
   padding: 4px;
   display: flex;
+}
+
+.message-card-history:hover {
+  color: var(--blue);
 }
 
 .message-card-delete:hover {
@@ -1323,4 +1334,33 @@ a {
 .message-card-delete:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.history-modal {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.history-entry {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.history-entry:first-of-type {
+  border-top: none;
+}
+
+.history-entry .message-card-text {
+  padding-right: 0;
+}
+
+.history-entry--current .message-card-meta {
+  color: var(--green);
+  font-weight: 700;
 }

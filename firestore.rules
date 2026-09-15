@@ -85,16 +85,38 @@ service cloud.firestore {
       allow update: if request.auth != null;
     }
 
-    // Notes guests leave for the celebrant. Guests can only write one in;
-    // they're kept for the celebrant to read later, so only signed-in
-    // admins can read, change, or remove them.
+    // Notes guests leave for the celebrant. Each guest's message lives
+    // under their own check-in id, so there's only ever one per guest,
+    // the app updates the same document rather than creating a new one.
+    // A guest can read back the current wording of their own message (the
+    // document id works the same way a check-in id does, it's not
+    // something other guests are shown), but the full list is only
+    // readable by signed-in admins, so guests can't browse each other's
+    // notes. Only signed-in admins can delete a message outright.
     match /guestMessages/{messageId} {
-      allow read: if request.auth != null;
+      allow get: if true;
+      allow list: if request.auth != null;
       allow create: if request.resource.data.message is string
         && request.resource.data.message.size() > 0
         && request.resource.data.message.size() <= 2000
         && request.resource.data.guestName is string;
-      allow update, delete: if request.auth != null;
+      allow update: if request.auth != null || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['message', 'updatedAt', 'editCount'])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 2000
+      );
+      allow delete: if request.auth != null;
+
+      // Earlier wording a message used to have, kept only so admins can
+      // look back at what changed. Guests can add an entry here when they
+      // edit their message, but never read this list back.
+      match /history/{historyId} {
+        allow read: if request.auth != null;
+        allow create: if request.resource.data.message is string
+          && request.resource.data.message.size() > 0;
+        allow update, delete: if request.auth != null;
+      }
     }
   }
 }

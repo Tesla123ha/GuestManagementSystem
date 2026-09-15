@@ -1,34 +1,87 @@
-import React, { useState } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  serverTimestamp,
+  increment,
+} from 'firebase/firestore';
 import { MessageSquare } from 'lucide-react';
 import { db } from '../firebase';
 
 const MAX_LENGTH = 500;
 
-// Lets a checked-in guest write a note for the celebrant. Messages are
-// write-only from the guest's side on purpose, there's no reading them
-// back here, they're kept for the celebrant and admin to read later.
+// Lets a checked-in guest write a note for the celebrant. Each guest gets
+// exactly one message, stored under their own check-in id, and can come
+// back to this tab and edit it. Editing keeps the old wording in a
+// history list, which only admins can see; the guest never sees it.
 export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
+  const [loaded, setLoaded] = useState(false);
+  const [existingMessage, setExistingMessage] = useState(null);
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [justSent, setJustSent] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [wasFirstSaveJustNow, setWasFirstSaveJustNow] = useState(false);
+
+  useEffect(() => {
+    if (!checkinId) return undefined;
+    let cancelled = false;
+    getDoc(doc(db, 'guestMessages', checkinId))
+      .then((snap) => {
+        if (cancelled) return;
+        if (snap.exists()) {
+          const data = snap.data();
+          setExistingMessage(data.message || '');
+          setText(data.message || '');
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [checkinId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed || submitting) return;
+    if (!trimmed || submitting || !checkinId) return;
+    const isFirstSave = existingMessage === null;
     setSubmitting(true);
-    setJustSent(false);
+    setJustSaved(false);
     try {
-      await addDoc(collection(db, 'guestMessages'), {
-        message: trimmed,
-        guestName: uploaderName || 'A guest',
-        tableNumber: tableNumber || null,
-        checkinId: checkinId || null,
-        createdAt: serverTimestamp(),
-      });
-      setText('');
-      setJustSent(true);
+      const messageRef = doc(db, 'guestMessages', checkinId);
+      if (!isFirstSave) {
+        // Keep what the message used to say before overwriting it, so
+        // admins can look back at earlier versions.
+        await addDoc(collection(db, 'guestMessages', checkinId, 'history'), {
+          message: existingMessage,
+          editedAt: serverTimestamp(),
+        });
+        await updateDoc(messageRef, {
+          message: trimmed,
+          updatedAt: serverTimestamp(),
+          editCount: increment(1),
+        });
+      } else {
+        await setDoc(messageRef, {
+          message: trimmed,
+          guestName: uploaderName || 'A guest',
+          tableNumber: tableNumber || null,
+          checkinId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          editCount: 0,
+        });
+      }
+      setExistingMessage(trimmed);
+      setWasFirstSaveJustNow(isFirstSave);
+      setJustSaved(true);
     } catch (err) {
       console.error(err);
     } finally {
@@ -36,11 +89,16 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
     }
   }
 
+  if (!loaded) return null;
+
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Leave a Message</h2>
-        <p style={{ margin: '4px 0 0' }}>Write a note for the celebrant. They'll get to read it later.</p>
+        <p style={{ margin: '4px 0 0' }}>
+          Write a note for the celebrant. You can only leave one message, but you can come back here and
+          edit it anytime.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="field">
@@ -48,7 +106,7 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
           value={text}
           onChange={(e) => {
             setText(e.target.value);
-            setJustSent(false);
+            setJustSaved(false);
           }}
           placeholder="Write your message here..."
           maxLength={MAX_LENGTH}
@@ -59,12 +117,16 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
           <span className="message-char-count">{text.length}/{MAX_LENGTH}</span>
           <button type="submit" className="btn btn-primary" disabled={submitting || !text.trim()}>
             <MessageSquare size={18} />
-            {submitting ? 'Sending...' : 'Send Message'}
+            {submitting ? 'Saving...' : existingMessage !== null ? 'Update Message' : 'Save Message'}
           </button>
         </div>
       </form>
 
-      {justSent && <p className="message-sent-note">Thanks! Your message was sent.</p>}
+      {justSaved && (
+        <p className="message-sent-note">
+          {wasFirstSaveJustNow ? 'Thanks! Your message was saved.' : 'Your message was updated.'}
+        </p>
+      )}
     </div>
   );
 }
