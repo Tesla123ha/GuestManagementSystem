@@ -12,6 +12,9 @@ export default function Album({ uploaderName, tableNumber }) {
   const [viewingIndex, setViewingIndex] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const touchStartX = useRef(null);
   const [tableFilter, setTableFilter] = useState('all'); // all | 'unknown' | a table number as a string
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const cameraInputRef = useRef(null);
@@ -110,6 +113,31 @@ export default function Album({ uploaderName, tableNumber }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewingIndex, filteredPhotos.length]);
+
+  // Lets a guest swipe left/right on the photo itself to move between
+  // photos, the same way a phone's own photo gallery works.
+  const SWIPE_THRESHOLD = 60;
+
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX;
+    setIsSwiping(true);
+  }
+
+  function handleTouchMove(e) {
+    if (touchStartX.current === null) return;
+    setSwipeOffset(e.touches[0].clientX - touchStartX.current);
+  }
+
+  function handleTouchEnd() {
+    if (swipeOffset > SWIPE_THRESHOLD) {
+      showPrevPhoto();
+    } else if (swipeOffset < -SWIPE_THRESHOLD) {
+      showNextPhoto();
+    }
+    setSwipeOffset(0);
+    setIsSwiping(false);
+    touchStartX.current = null;
+  }
 
   function requestDelete(photo) {
     setConfirmDeletePhoto(photo);
@@ -337,7 +365,19 @@ export default function Album({ uploaderName, tableNumber }) {
                 </button>
               </>
             )}
-            <img src={viewingPhoto.imageUrl} alt={`Photo by ${viewingPhoto.uploaderName}`} />
+            <img
+              src={viewingPhoto.imageUrl}
+              alt={`Photo by ${viewingPhoto.uploaderName}`}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={{
+                transform: `translateX(${swipeOffset}px)`,
+                transition: isSwiping ? 'none' : 'transform 0.2s ease',
+                opacity: isSwiping ? Math.max(1 - Math.abs(swipeOffset) / 300, 0.5) : 1,
+                touchAction: 'pan-y',
+              }}
+            />
             <p>
               {viewingPhoto.uploaderName}
               {!hasNoTable(viewingPhoto) && ` · Table ${viewingPhoto.tableNumber}`}

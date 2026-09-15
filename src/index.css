@@ -75,6 +75,24 @@ a {
   50% { transform: scale(1.08); }
 }
 
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.tab-panel--right {
+  animation: slideInFromRight 0.25s ease;
+}
+
+.tab-panel--left {
+  animation: slideInFromLeft 0.25s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
@@ -747,6 +765,7 @@ a {
   border-radius: 12px;
   border: 1.5px dashed rgba(138, 124, 108, 0.22);
   background: rgba(255, 255, 255, 0.35);
+  transition: background-color 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
 
 .floor-plan-cell-dot {
@@ -759,6 +778,27 @@ a {
 .floor-plan-cell.editable {
   border: 2px dashed var(--gold);
   background: rgba(255, 255, 255, 0.55);
+}
+
+.floor-plan-cell.drag-over {
+  background: var(--gold-light);
+  border-color: var(--blue);
+  transform: scale(1.06);
+}
+
+.table-shape.dragging {
+  opacity: 0.35;
+  transform: scale(0.9);
+}
+
+@keyframes tableSettle {
+  0% { transform: scale(1.18); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.table-shape.just-placed {
+  animation: tableSettle 0.4s ease;
 }
 
 .floor-plan-legend {

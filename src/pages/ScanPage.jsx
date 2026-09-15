@@ -40,6 +40,15 @@ export default function ScanPage() {
   const [submitting, setSubmitting] = useState(false);
   const [allCheckins, setAllCheckins] = useState([]);
   const [activeTab, setActiveTab] = useState('table');
+  const [tabDirection, setTabDirection] = useState('right');
+  const tabOrder = ['table', 'album', 'message'];
+
+  function switchTab(tab) {
+    const from = tabOrder.indexOf(activeTab);
+    const to = tabOrder.indexOf(tab);
+    setTabDirection(to > from ? 'right' : 'left');
+    setActiveTab(tab);
+  }
 
   // Load event name and guest screen messages
   useEffect(() => {
@@ -220,38 +229,40 @@ export default function ScanPage() {
               <button
                 type="button"
                 className={'guest-tab' + (activeTab === 'table' ? ' active' : '')}
-                onClick={() => setActiveTab('table')}
+                onClick={() => switchTab('table')}
               >
                 <LayoutGrid size={16} /> Table Layout
               </button>
               <button
                 type="button"
                 className={'guest-tab' + (activeTab === 'album' ? ' active' : '')}
-                onClick={() => setActiveTab('album')}
+                onClick={() => switchTab('album')}
               >
                 <Image size={16} /> Shared Album
               </button>
               <button
                 type="button"
                 className={'guest-tab' + (activeTab === 'message' ? ' active' : '')}
-                onClick={() => setActiveTab('message')}
+                onClick={() => switchTab('message')}
               >
                 <MessageSquare size={16} /> Leave a Message
               </button>
             </div>
 
             <div className="card">
-              {activeTab === 'table' && <FloorPlan highlightCheckinId={checkin.id} embedded />}
-              {activeTab === 'album' && (
-                <Album uploaderName={checkin.fullName} tableNumber={checkin.tableNumber || null} />
-              )}
-              {activeTab === 'message' && (
-                <GuestMessage
-                  uploaderName={checkin.fullName}
-                  tableNumber={checkin.tableNumber || null}
-                  checkinId={checkin.id}
-                />
-              )}
+              <div key={activeTab} className={'tab-panel tab-panel--' + tabDirection}>
+                {activeTab === 'table' && <FloorPlan highlightCheckinId={checkin.id} embedded />}
+                {activeTab === 'album' && (
+                  <Album uploaderName={checkin.fullName} tableNumber={checkin.tableNumber || null} />
+                )}
+                {activeTab === 'message' && (
+                  <GuestMessage
+                    uploaderName={checkin.fullName}
+                    tableNumber={checkin.tableNumber || null}
+                    checkinId={checkin.id}
+                  />
+                )}
+              </div>
             </div>
           </>
         )}

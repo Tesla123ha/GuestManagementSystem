@@ -16,6 +16,8 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
   const [rowsInput, setRowsInput] = useState(DEFAULT_ROWS);
   const [colsInput, setColsInput] = useState(DEFAULT_COLS);
   const [draggedTableId, setDraggedTableId] = useState(null);
+  const [dragOverCell, setDragOverCell] = useState(null);
+  const [justPlacedId, setJustPlacedId] = useState(null);
 
   const autoAssignedIds = useRef(new Set());
 
@@ -119,8 +121,13 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
 
   function handleDrop(row, col) {
     if (!draggedTableId) return;
-    placeTableAt(draggedTableId, row, col);
+    const tableId = draggedTableId;
+    placeTableAt(tableId, row, col).then(() => {
+      setJustPlacedId(tableId);
+      setTimeout(() => setJustPlacedId((id) => (id === tableId ? null : id)), 400);
+    });
     setDraggedTableId(null);
+    setDragOverCell(null);
   }
 
   const isGuestView = Boolean(highlightCheckinId);
@@ -133,12 +140,22 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
     const occupants = occupantsOf(table.id);
     const isMine = highlightCheckinId && occupants.some((o) => o.id === highlightCheckinId);
     const isFull = occupants.length >= table.capacity;
+    const isDragging = draggedTableId === table.id;
+    const justPlaced = justPlacedId === table.id;
     return (
       <div
         key={table.id}
-        className={'table-shape' + (isFull ? ' full' : '') + (isMine ? ' mine' : '') + (draggable ? ' editable' : '')}
+        className={
+          'table-shape' +
+          (isFull ? ' full' : '') +
+          (isMine ? ' mine' : '') +
+          (draggable ? ' editable' : '') +
+          (isDragging ? ' dragging' : '') +
+          (justPlaced ? ' just-placed' : '')
+        }
         draggable={draggable}
         onDragStart={draggable ? () => setDraggedTableId(table.id) : undefined}
+        onDragEnd={draggable ? () => setDraggedTableId(null) : undefined}
         onClick={() => {
           if (!editMode) setSelectedTable(table.id);
         }}
@@ -244,11 +261,14 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
                 {Array.from({ length: gridSize.rows }).map((_, row) =>
                   Array.from({ length: gridSize.cols }).map((_, col) => {
                     const table = placedTables.find((t) => t.row === row && t.col === col);
+                    const isDragOver = dragOverCell && dragOverCell.row === row && dragOverCell.col === col;
                     return (
                       <div
                         key={`${row}-${col}`}
-                        className={'floor-plan-cell' + (editMode ? ' editable' : '')}
+                        className={'floor-plan-cell' + (editMode ? ' editable' : '') + (isDragOver ? ' drag-over' : '')}
                         onDragOver={editMode ? (e) => e.preventDefault() : undefined}
+                        onDragEnter={editMode ? () => setDragOverCell({ row, col }) : undefined}
+                        onDragLeave={editMode ? () => setDragOverCell((c) => (c && c.row === row && c.col === col ? null : c)) : undefined}
                         onDrop={editMode ? () => handleDrop(row, col) : undefined}
                       >
                         {table ? renderTableShape(table, { draggable: editMode }) : <span className="floor-plan-cell-dot" />}
