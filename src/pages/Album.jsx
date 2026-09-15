@@ -25,10 +25,10 @@ export default function Album({ uploaderName }) {
   // Also pick up any photo that was added straight to the Drive folder
   // rather than through this page's upload buttons. Firestore already
   // updates live, but this list doesn't, so it's checked again every
-  // minute to catch anything added outside the app. This is kept
-  // infrequent on purpose: checking too often overloads Google's servers
-  // when several guests have the album open at the same time, which can
-  // cause uploads to fail.
+  // 5 seconds to catch anything added outside the app. Checking too often
+  // can overload Google's servers when several guests have the album open
+  // at the same time, which can cause uploads to fail, so this isn't set
+  // any faster than that.
   useEffect(() => {
     function refreshDrivePhotos() {
       listPhotosFromDrive()
@@ -36,7 +36,7 @@ export default function Album({ uploaderName }) {
         .catch((err) => console.error('Could not list Drive photos', err));
     }
     refreshDrivePhotos();
-    const interval = setInterval(refreshDrivePhotos, 60000);
+    const interval = setInterval(refreshDrivePhotos, 5000);
     return () => clearInterval(interval);
   }, []);
 
