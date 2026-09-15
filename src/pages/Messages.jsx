@@ -155,10 +155,7 @@ export default function Messages() {
                 </button>
               </div>
               <p className="message-card-text">{msg.message}</p>
-              <div className="message-card-signature">
-                - {msg.guestName || 'A guest'}
-                {msg.editCount > 0 && ` · Edited ${msg.editCount}x`}
-              </div>
+              <div className="message-card-signature">- {msg.guestName || 'A guest'}</div>
             </div>
           ))}
         </div>

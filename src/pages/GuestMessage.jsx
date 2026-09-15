@@ -4,12 +4,13 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   collection,
   addDoc,
   serverTimestamp,
   increment,
 } from 'firebase/firestore';
-import { MessageSquare, Pencil } from 'lucide-react';
+import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { db } from '../firebase';
 
 const MAX_LENGTH = 500;
@@ -27,6 +28,8 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
   const [submitting, setSubmitting] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [wasFirstSaveJustNow, setWasFirstSaveJustNow] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     if (!checkinId) return undefined;
@@ -106,6 +109,23 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
     setEditing(false);
   }
 
+  async function handleDelete() {
+    if (!checkinId) return;
+    setConfirmingDelete(false);
+    setDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'guestMessages', checkinId));
+      setExistingMessage(null);
+      setText('');
+      setJustSaved(false);
+      setEditing(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (!loaded) return null;
 
   return (
@@ -151,10 +171,38 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
             </p>
           )}
           <p className="message-view-text">{existingMessage}</p>
-          <button type="button" className="btn btn-outline" onClick={startEditing}>
-            <Pencil size={16} />
-            Edit Message
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="btn btn-outline" onClick={startEditing} disabled={deleting}>
+              <Pencil size={16} />
+              Edit Message
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={deleting}
+            >
+              <Trash2 size={16} />
+              {deleting ? 'Deleting...' : 'Delete Message'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmingDelete && (
+        <div className="modal-overlay" onClick={() => setConfirmingDelete(false)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete your message?</h3>
+            <p>This removes it for good. You can always write a new one after.</p>
+            <div className="confirm-modal-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setConfirmingDelete(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger" onClick={handleDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

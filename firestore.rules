@@ -88,11 +88,10 @@ service cloud.firestore {
     // Notes guests leave for the celebrant. Each guest's message lives
     // under their own check-in id, so there's only ever one per guest,
     // the app updates the same document rather than creating a new one.
-    // A guest can read back the current wording of their own message (the
-    // document id works the same way a check-in id does, it's not
-    // something other guests are shown), but the full list is only
-    // readable by signed-in admins, so guests can't browse each other's
-    // notes. Only signed-in admins can delete a message outright.
+    // A guest can read back and remove their own message (the document id
+    // works the same way a check-in id does, it's not something other
+    // guests are shown), but the full list is only readable by signed-in
+    // admins, so guests can't browse each other's notes.
     match /guestMessages/{messageId} {
       allow get: if true;
       allow list: if request.auth != null;
@@ -106,7 +105,7 @@ service cloud.firestore {
         && request.resource.data.message.size() > 0
         && request.resource.data.message.size() <= 2000
       );
-      allow delete: if request.auth != null;
+      allow delete: if true;
 
       // Earlier wording a message used to have, kept only so admins can
       // look back at what changed. Guests can add an entry here when they
