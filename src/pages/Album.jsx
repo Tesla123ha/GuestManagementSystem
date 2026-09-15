@@ -187,7 +187,10 @@ export default function Album({ uploaderName }) {
               tabIndex={0}
             >
               <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
-              <span className="album-thumb-name">{photo.uploaderName}</span>
+              <span className="album-thumb-name">
+                {photo.uploaderName}
+                {' · DEBUG mine=' + JSON.stringify(uploaderName) + ' own=' + String(isOwnPhoto(photo)) + ' tracked=' + String(photo.trackedInDatabase)}
+              </span>
               {isOwnPhoto(photo) && (
                 <button
                   type="button"
