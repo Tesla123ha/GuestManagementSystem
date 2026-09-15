@@ -35,6 +35,22 @@ function doPost(e) {
 
 function handleUpload(request) {
   const folder = DriveApp.getFolderById(FOLDER_ID);
+
+  // The app retries an upload on its own if Google's reply gets lost on
+  // the way back, even when the file was already saved here. Each retry
+  // sends the exact same file name, so check for that name first. If it's
+  // already in the folder, this is a repeat of an upload that already
+  // worked, so that same file is reused instead of saving a second copy.
+  const existing = folder.getFilesByName(request.fileName);
+  if (existing.hasNext()) {
+    const file = existing.next();
+    return jsonResponse({
+      success: true,
+      fileId: file.getId(),
+      url: viewUrlFor(file.getId()),
+    });
+  }
+
   const bytes = Utilities.base64Decode(request.base64Data);
   const blob = Utilities.newBlob(bytes, request.mimeType, request.fileName);
   const file = folder.createFile(blob);

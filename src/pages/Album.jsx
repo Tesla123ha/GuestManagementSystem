@@ -8,7 +8,6 @@ export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
   const [viewingIndex, setViewingIndex] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
@@ -116,7 +115,6 @@ export default function Album({ uploaderName }) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     setUploading(true);
-    setUploadError(null);
     try {
       const { imageUrl, fileId } = await uploadPhotoToDrive(file, uploaderName);
       await addDoc(collection(db, 'albumPhotos'), {
@@ -127,7 +125,6 @@ export default function Album({ uploaderName }) {
       });
     } catch (err) {
       console.error(err);
-      setUploadError('Could not upload that photo. Please try again.');
     } finally {
       setUploading(false);
       if (cameraInputRef.current) cameraInputRef.current.value = '';
@@ -178,8 +175,6 @@ export default function Album({ uploaderName }) {
           style={{ display: 'none' }}
         />
       </div>
-
-      {uploadError && <p style={{ color: 'var(--red)', margin: '8px 0 0' }}>{uploadError}</p>}
 
       {displayPhotos.length === 0 ? (
         <div className="empty-state">No photos yet. Be the first to add one!</div>
