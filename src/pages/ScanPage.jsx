@@ -236,7 +236,7 @@ export default function ScanPage() {
               {activeTab === 'table' ? (
                 <FloorPlan highlightCheckinId={checkin.id} embedded />
               ) : (
-                <Album uploaderName={checkin.fullName} />
+                <Album uploaderName={checkin.fullName} tableNumber={checkin.tableNumber || null} />
               )}
             </div>
           </>

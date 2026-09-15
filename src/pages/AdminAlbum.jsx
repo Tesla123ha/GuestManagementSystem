@@ -10,6 +10,7 @@ export default function AdminAlbum() {
   const [deletingId, setDeletingId] = useState(null);
   const [viewingIndex, setViewingIndex] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
+  const [tableFilter, setTableFilter] = useState('all'); // all | 'unknown' | a table number as a string
 
   useEffect(() => {
     const q = query(collection(db, 'albumPhotos'), orderBy('createdAt', 'desc'));
@@ -52,14 +53,30 @@ export default function AdminAlbum() {
     ...photos.map((p) => ({ ...p, trackedInDatabase: true })),
     ...untrackedDrivePhotos,
   ];
-  const viewingPhoto = viewingIndex !== null ? displayPhotos[viewingIndex] : null;
+
+  // Photos added before this filter existed, or found straight in the
+  // Drive folder, don't know which table they came from. Those are
+  // grouped under "Unknown Table" instead of being hidden.
+  function hasNoTable(photo) {
+    return photo.tableNumber === undefined || photo.tableNumber === null || photo.tableNumber === '';
+  }
+  const availableTables = Array.from(
+    new Set(displayPhotos.filter((p) => !hasNoTable(p)).map((p) => p.tableNumber))
+  ).sort((a, b) => a - b);
+  const hasUnknownTablePhotos = displayPhotos.some(hasNoTable);
+  const filteredPhotos = displayPhotos.filter((p) => {
+    if (tableFilter === 'all') return true;
+    if (tableFilter === 'unknown') return hasNoTable(p);
+    return String(p.tableNumber) === tableFilter;
+  });
+  const viewingPhoto = viewingIndex !== null ? filteredPhotos[viewingIndex] : null;
 
   function showPrevPhoto() {
-    setViewingIndex((i) => (i === null ? i : (i - 1 + displayPhotos.length) % displayPhotos.length));
+    setViewingIndex((i) => (i === null ? i : (i - 1 + filteredPhotos.length) % filteredPhotos.length));
   }
 
   function showNextPhoto() {
-    setViewingIndex((i) => (i === null ? i : (i + 1) % displayPhotos.length));
+    setViewingIndex((i) => (i === null ? i : (i + 1) % filteredPhotos.length));
   }
 
   useEffect(() => {
@@ -71,7 +88,7 @@ export default function AdminAlbum() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewingIndex, displayPhotos.length]);
+  }, [viewingIndex, filteredPhotos.length]);
 
   function requestDelete(photo) {
     setConfirmDeletePhoto(photo);
@@ -111,11 +128,30 @@ export default function AdminAlbum() {
         <p>Every photo guests have added. Remove any that shouldn't be here.</p>
       </div>
 
+      {(availableTables.length > 0 || hasUnknownTablePhotos) && (
+        <div className="filter-select-wrap" style={{ marginBottom: 16 }}>
+          <label className="filter-select-label">Table</label>
+          <select
+            className={'filter-select' + (tableFilter !== 'all' ? ' filter-select--active' : '')}
+            value={tableFilter}
+            onChange={(e) => setTableFilter(e.target.value)}
+          >
+            <option value="all">All Tables</option>
+            {availableTables.map((n) => (
+              <option key={n} value={String(n)}>Table {n}</option>
+            ))}
+            {hasUnknownTablePhotos && <option value="unknown">Unknown Table</option>}
+          </select>
+        </div>
+      )}
+
       {displayPhotos.length === 0 ? (
         <div className="empty-state">No photos have been added yet.</div>
+      ) : filteredPhotos.length === 0 ? (
+        <div className="empty-state">No photos for that table yet.</div>
       ) : (
         <div className="album-grid">
-          {displayPhotos.map((photo, index) => (
+          {filteredPhotos.map((photo, index) => (
             <div
               key={photo.id}
               className="album-thumb album-thumb--admin"
@@ -124,7 +160,10 @@ export default function AdminAlbum() {
               tabIndex={0}
             >
               <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
-              <span className="album-thumb-name">{photo.uploaderName}</span>
+              <span className="album-thumb-name">
+                {photo.uploaderName}
+                {!hasNoTable(photo) && ` · Table ${photo.tableNumber}`}
+              </span>
               <button
                 type="button"
                 className="album-thumb-delete"
@@ -157,7 +196,7 @@ export default function AdminAlbum() {
             >
               <Trash2 size={16} />
             </button>
-            {displayPhotos.length > 1 && (
+            {filteredPhotos.length > 1 && (
               <>
                 <button
                   type="button"
@@ -178,7 +217,10 @@ export default function AdminAlbum() {
               </>
             )}
             <img src={viewingPhoto.imageUrl} alt={`Photo by ${viewingPhoto.uploaderName}`} />
-            <p>{viewingPhoto.uploaderName}</p>
+            <p>
+              {viewingPhoto.uploaderName}
+              {!hasNoTable(viewingPhoto) && ` · Table ${viewingPhoto.tableNumber}`}
+            </p>
           </div>
         </div>
       )}
