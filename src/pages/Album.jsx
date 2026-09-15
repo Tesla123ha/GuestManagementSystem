@@ -8,6 +8,7 @@ export default function Album({ uploaderName }) {
   const [photos, setPhotos] = useState([]);
   const [drivePhotos, setDrivePhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   const [viewingIndex, setViewingIndex] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
@@ -25,7 +26,10 @@ export default function Album({ uploaderName }) {
   // Also pick up any photo that was added straight to the Drive folder
   // rather than through this page's upload buttons. Firestore already
   // updates live, but this list doesn't, so it's checked again every
-  // 20 seconds to catch anything added outside the app.
+  // minute to catch anything added outside the app. This is kept
+  // infrequent on purpose: checking too often overloads Google's servers
+  // when several guests have the album open at the same time, which can
+  // cause uploads to fail.
   useEffect(() => {
     function refreshDrivePhotos() {
       listPhotosFromDrive()
@@ -33,7 +37,7 @@ export default function Album({ uploaderName }) {
         .catch((err) => console.error('Could not list Drive photos', err));
     }
     refreshDrivePhotos();
-    const interval = setInterval(refreshDrivePhotos, 20000);
+    const interval = setInterval(refreshDrivePhotos, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -112,6 +116,7 @@ export default function Album({ uploaderName }) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const { imageUrl, fileId } = await uploadPhotoToDrive(file, uploaderName);
       await addDoc(collection(db, 'albumPhotos'), {
@@ -121,8 +126,8 @@ export default function Album({ uploaderName }) {
         createdAt: serverTimestamp(),
       });
     } catch (err) {
-      // Upload failed silently on purpose; nothing is shown to the guest.
       console.error(err);
+      setUploadError('Could not upload that photo. Please try again.');
     } finally {
       setUploading(false);
       if (cameraInputRef.current) cameraInputRef.current.value = '';
@@ -174,6 +179,8 @@ export default function Album({ uploaderName }) {
         />
       </div>
 
+      {uploadError && <p style={{ color: 'var(--red)', margin: '8px 0 0' }}>{uploadError}</p>}
+
       {displayPhotos.length === 0 ? (
         <div className="empty-state">No photos yet. Be the first to add one!</div>
       ) : (
@@ -187,10 +194,7 @@ export default function Album({ uploaderName }) {
               tabIndex={0}
             >
               <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
-              <span className="album-thumb-name">
-                {photo.uploaderName}
-                {' · DEBUG mine=' + JSON.stringify(uploaderName) + ' own=' + String(isOwnPhoto(photo)) + ' tracked=' + String(photo.trackedInDatabase)}
-              </span>
+              <span className="album-thumb-name">{photo.uploaderName}</span>
               {isOwnPhoto(photo) && (
                 <button
                   type="button"

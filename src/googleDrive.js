@@ -14,21 +14,35 @@ function fileToBase64(file) {
   });
 }
 
-async function callScript(payload) {
+// Google's servers occasionally send back a broken, empty reply instead of
+// the real one when a lot of requests arrive close together (for example
+// several guests using the album at the same time). Trying again after a
+// short pause almost always works, so this only gives up after a few tries.
+const MAX_ATTEMPTS = 3;
+
+async function callScript(payload, attempt = 1) {
   if (!SCRIPT_URL) {
     throw new Error('Google Drive is not set up yet. Add VITE_GOOGLE_SCRIPT_URL to your .env file.');
   }
-  const response = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    // Plain text avoids a CORS preflight request, which Apps Script web apps don't support.
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-  });
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || 'Google Drive request failed.');
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      // Plain text avoids a CORS preflight request, which Apps Script web apps don't support.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Google Drive request failed.');
+    }
+    return result;
+  } catch (err) {
+    if (attempt < MAX_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
+      return callScript(payload, attempt + 1);
+    }
+    throw err;
   }
-  return result;
 }
 
 // Turns a guest's full name into safe text for a file name (letters,
