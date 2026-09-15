@@ -367,16 +367,22 @@ a {
   color: var(--ink-soft);
 }
 
-.field input, .field select {
+.field input, .field select, .field textarea {
   padding: 11px 14px;
   border-radius: 10px;
   border: 1.5px solid var(--border);
   font-size: 1rem;
   outline: none;
+  font-family: inherit;
 }
 
-.field input:focus, .field select:focus {
+.field input:focus, .field select:focus, .field textarea:focus {
   border-color: var(--blue);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 110px;
 }
 
 /* ---------- Tables ---------- */
@@ -1243,4 +1249,78 @@ a {
 
 .btn-danger:hover {
   background: rgba(198, 91, 78, 1);
+}
+
+/* ---------- Guest messages ---------- */
+
+.message-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.message-char-count {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.message-sent-note {
+  color: var(--green);
+  font-weight: 700;
+  margin-top: 12px;
+}
+
+.message-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.message-card {
+  position: relative;
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-card-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding-right: 24px;
+}
+
+.message-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.message-card-delete {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+
+.message-card-delete:hover {
+  color: var(--red);
+}
+
+.message-card-delete:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

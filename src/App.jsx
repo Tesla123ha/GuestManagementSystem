@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import ScanPage from './pages/ScanPage';
 import FloorPlan from './pages/FloorPlan';
 import AdminAlbum from './pages/AdminAlbum';
+import Messages from './pages/Messages';
 
 function AdminLayout({ children, user }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -82,6 +83,7 @@ export default function App() {
       <Route path="/checkins" element={<AdminLayout user={user}><CheckIns /></AdminLayout>} />
       <Route path="/floor-plan-admin" element={<AdminLayout user={user}><FloorPlan /></AdminLayout>} />
       <Route path="/album" element={<AdminLayout user={user}><AdminAlbum /></AdminLayout>} />
+      <Route path="/messages" element={<AdminLayout user={user}><Messages /></AdminLayout>} />
       <Route path="/settings" element={<AdminLayout user={user}><Settings /></AdminLayout>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />

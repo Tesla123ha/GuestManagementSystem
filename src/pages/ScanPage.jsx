@@ -13,10 +13,11 @@ import {
   arrayUnion,
   serverTimestamp,
 } from 'firebase/firestore';
-import { Heart, LayoutGrid, Image } from 'lucide-react';
+import { Heart, LayoutGrid, Image, MessageSquare } from 'lucide-react';
 import { db } from '../firebase';
 import FloorPlan from './FloorPlan';
 import Album from './Album';
+import GuestMessage from './GuestMessage';
 
 const STORAGE_KEY = 'party_checkin_id';
 
@@ -230,13 +231,26 @@ export default function ScanPage() {
               >
                 <Image size={16} /> Shared Album
               </button>
+              <button
+                type="button"
+                className={'guest-tab' + (activeTab === 'message' ? ' active' : '')}
+                onClick={() => setActiveTab('message')}
+              >
+                <MessageSquare size={16} /> Leave a Message
+              </button>
             </div>
 
             <div className="card">
-              {activeTab === 'table' ? (
-                <FloorPlan highlightCheckinId={checkin.id} embedded />
-              ) : (
+              {activeTab === 'table' && <FloorPlan highlightCheckinId={checkin.id} embedded />}
+              {activeTab === 'album' && (
                 <Album uploaderName={checkin.fullName} tableNumber={checkin.tableNumber || null} />
+              )}
+              {activeTab === 'message' && (
+                <GuestMessage
+                  uploaderName={checkin.fullName}
+                  tableNumber={checkin.tableNumber || null}
+                  checkinId={checkin.id}
+                />
               )}
             </div>
           </>

@@ -84,5 +84,17 @@ service cloud.firestore {
       allow delete: if true;
       allow update: if request.auth != null;
     }
+
+    // Notes guests leave for the celebrant. Guests can only write one in;
+    // they're kept for the celebrant to read later, so only signed-in
+    // admins can read, change, or remove them.
+    match /guestMessages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 2000
+        && request.resource.data.guestName is string;
+      allow update, delete: if request.auth != null;
+    }
   }
 }
