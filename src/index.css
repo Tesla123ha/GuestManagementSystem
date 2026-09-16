@@ -1326,23 +1326,41 @@ a {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 10px 20px;
   border-radius: 999px;
-  background: rgba(58, 50, 43, 0.75);
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 600;
+  background: var(--white);
+  border: 2px solid var(--gold);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
   animation: swipeHintPulse 3.5s ease forwards;
 }
 
+.swipe-hint svg {
+  color: var(--red);
+  flex-shrink: 0;
+  animation: swipeHintArrows 1.4s ease-in-out infinite;
+}
+
+.swipe-hint svg:first-child {
+  animation-direction: reverse;
+}
+
 @keyframes swipeHintPulse {
-  0% { opacity: 0; transform: translateX(-50%) translateY(6px); }
-  12% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  80% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.9); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.05); }
+  16% { transform: translateX(-50%) translateY(0) scale(1); }
+  85% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.95); }
+}
+
+@keyframes swipeHintArrows {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
 }
 
 .album-lightbox-close {
