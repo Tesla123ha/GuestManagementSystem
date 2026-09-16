@@ -1124,6 +1124,14 @@ a {
   pointer-events: auto;
 }
 
+/* This card already fades/slides in on its own timing via .guest-reveal;
+   the default .card mount animation would otherwise briefly force it to
+   full opacity partway through and cause a flicker before it's meant to
+   show. */
+.card.guest-reveal {
+  animation: none;
+}
+
 .line-number {
   font-family: 'Quicksand', sans-serif;
   font-size: 2.6rem;
