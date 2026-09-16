@@ -1100,6 +1100,17 @@ a {
   line-height: 1.5;
 }
 
+.guest-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.guest-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .line-number {
   font-family: 'Quicksand', sans-serif;
   font-size: 2.6rem;

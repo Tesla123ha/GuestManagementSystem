@@ -41,6 +41,7 @@ export default function ScanPage() {
   const [allCheckins, setAllCheckins] = useState([]);
   const [activeTab, setActiveTab] = useState('table');
   const [tabDirection, setTabDirection] = useState('right');
+  const [showTabs, setShowTabs] = useState(false);
   const tabOrder = ['table', 'album', 'message'];
 
   function switchTab(tab) {
@@ -92,6 +93,19 @@ export default function ScanPage() {
 
   const waitingCheckins = allCheckins.filter((c) => c.status !== 'assigned');
   const queuePosition = checkin ? waitingCheckins.findIndex((c) => c.id === checkin.id) + 1 : 0;
+  const isWaiting = !checkin || checkin.status === 'waiting';
+
+  // Once a guest is seated, let the "Welcome" card have its moment first,
+  // then bring in the tabs and content a beat later instead of everything
+  // landing on screen all at once.
+  useEffect(() => {
+    if (isWaiting) {
+      setShowTabs(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => setShowTabs(true), 900);
+    return () => clearTimeout(timer);
+  }, [isWaiting]);
 
   // Looks for a guest list entry with a matching name that already has a table
   // assigned, and if that table has an open seat, returns the seat details to
@@ -196,7 +210,6 @@ export default function ScanPage() {
 
   // Step 2 & 3: checked in. Show status up top, then let the guest switch
   // between the table layout and the shared album underneath.
-  const isWaiting = checkin.status === 'waiting';
 
   return (
     <div className="guest-screen" style={{ alignItems: 'flex-start', paddingTop: 40 }}>
@@ -224,7 +237,7 @@ export default function ScanPage() {
         </div>
 
         {!isWaiting && (
-          <>
+          <div className={'guest-reveal' + (showTabs ? ' guest-reveal--visible' : '')}>
             <div className="guest-tabs">
               <button
                 type="button"
@@ -264,7 +277,7 @@ export default function ScanPage() {
                 )}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
