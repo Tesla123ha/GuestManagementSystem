@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { Camera, Upload, X, ChevronLeft, ChevronRight, ChevronDown, Check, Trash2 } from 'lucide-react';
 import { db } from '../firebase';
@@ -269,7 +270,7 @@ export default function Album({ uploaderName, tableNumber }) {
         </div>
       )}
 
-      {filterModalOpen && (
+      {filterModalOpen && createPortal(
         <div className="modal-overlay" onClick={() => setFilterModalOpen(false)}>
           <div className="table-filter-modal" onClick={(e) => e.stopPropagation()}>
             <div className="table-filter-modal-header">
@@ -300,7 +301,8 @@ export default function Album({ uploaderName, tableNumber }) {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {displayPhotos.length === 0 ? (
@@ -341,7 +343,7 @@ export default function Album({ uploaderName, tableNumber }) {
         </div>
       )}
 
-      {viewingPhoto && (
+      {viewingPhoto && createPortal(
         <div className="modal-overlay" onClick={() => setViewingIndex(null)}>
           <div className="album-lightbox" onClick={(e) => e.stopPropagation()}>
             <div className="album-lightbox-header">
@@ -402,10 +404,11 @@ export default function Album({ uploaderName, tableNumber }) {
               {!hasNoTable(viewingPhoto) && ` · Table ${viewingPhoto.tableNumber}`}
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {confirmDeletePhoto && (
+      {confirmDeletePhoto && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeletePhoto(null)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Delete this photo?</h3>
@@ -419,7 +422,8 @@ export default function Album({ uploaderName, tableNumber }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
