@@ -41,7 +41,7 @@ export default function ScanPage() {
   const [allCheckins, setAllCheckins] = useState([]);
   const [activeTab, setActiveTab] = useState('table');
   const [tabDirection, setTabDirection] = useState('right');
-  const [showTabs, setShowTabs] = useState(false);
+  const [revealStep, setRevealStep] = useState(0); // 0 none, 1-3 tabs one by one, 4 content
   const tabOrder = ['table', 'album', 'message'];
 
   function switchTab(tab) {
@@ -96,15 +96,22 @@ export default function ScanPage() {
   const isWaiting = !checkin || checkin.status === 'waiting';
 
   // Once a guest is seated, let the "Welcome" card have its moment first,
-  // then bring in the tabs and content a beat later instead of everything
-  // landing on screen all at once.
+  // then bring the three tabs in one at a time, and only once they're all
+  // there, reveal the actual table layout / album / message content.
   useEffect(() => {
     if (isWaiting) {
-      setShowTabs(false);
+      setRevealStep(0);
       return undefined;
     }
-    const timer = setTimeout(() => setShowTabs(true), 900);
-    return () => clearTimeout(timer);
+    const baseDelay = 900;
+    const stagger = 200;
+    const timers = [
+      setTimeout(() => setRevealStep(1), baseDelay),
+      setTimeout(() => setRevealStep(2), baseDelay + stagger),
+      setTimeout(() => setRevealStep(3), baseDelay + stagger * 2),
+      setTimeout(() => setRevealStep(4), baseDelay + stagger * 2 + 350),
+    ];
+    return () => timers.forEach(clearTimeout);
   }, [isWaiting]);
 
   // Looks for a guest list entry with a matching name that already has a table
@@ -237,32 +244,41 @@ export default function ScanPage() {
         </div>
 
         {!isWaiting && (
-          <div className={'guest-reveal' + (showTabs ? ' guest-reveal--visible' : '')}>
+          <>
             <div className="guest-tabs">
               <button
                 type="button"
-                className={'guest-tab' + (activeTab === 'table' ? ' active' : '')}
+                className={
+                  'guest-tab' + (activeTab === 'table' ? ' active' : '') +
+                  ' guest-tab-reveal' + (revealStep >= 1 ? ' guest-tab-reveal--visible' : '')
+                }
                 onClick={() => switchTab('table')}
               >
                 <LayoutGrid size={16} /> Table Layout
               </button>
               <button
                 type="button"
-                className={'guest-tab' + (activeTab === 'album' ? ' active' : '')}
+                className={
+                  'guest-tab' + (activeTab === 'album' ? ' active' : '') +
+                  ' guest-tab-reveal' + (revealStep >= 2 ? ' guest-tab-reveal--visible' : '')
+                }
                 onClick={() => switchTab('album')}
               >
                 <Image size={16} /> Shared Album
               </button>
               <button
                 type="button"
-                className={'guest-tab' + (activeTab === 'message' ? ' active' : '')}
+                className={
+                  'guest-tab' + (activeTab === 'message' ? ' active' : '') +
+                  ' guest-tab-reveal' + (revealStep >= 3 ? ' guest-tab-reveal--visible' : '')
+                }
                 onClick={() => switchTab('message')}
               >
                 <MessageSquare size={16} /> Leave a Message
               </button>
             </div>
 
-            <div className="card">
+            <div className={'card guest-reveal' + (revealStep >= 4 ? ' guest-reveal--visible' : '')}>
               <div key={activeTab} className={'tab-panel tab-panel--' + tabDirection}>
                 {activeTab === 'table' && <FloorPlan highlightCheckinId={checkin.id} embedded />}
                 {activeTab === 'album' && (
@@ -277,7 +293,7 @@ export default function ScanPage() {
                 )}
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

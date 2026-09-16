@@ -1111,6 +1111,19 @@ a {
   transform: translateY(0);
 }
 
+.guest-tab-reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.guest-tab-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .line-number {
   font-family: 'Quicksand', sans-serif;
   font-size: 2.6rem;
