@@ -105,6 +105,14 @@ export default function Album({ uploaderName, tableNumber }) {
 
   useEffect(() => {
     if (viewingIndex === null) return undefined;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [viewingIndex]);
+
+  useEffect(() => {
+    if (viewingIndex === null) return undefined;
     function handleKeyDown(e) {
       if (e.key === 'ArrowLeft') showPrevPhoto();
       if (e.key === 'ArrowRight') showNextPhoto();
@@ -331,53 +339,59 @@ export default function Album({ uploaderName, tableNumber }) {
       {viewingPhoto && (
         <div className="modal-overlay" onClick={() => setViewingIndex(null)}>
           <div className="album-lightbox" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="album-lightbox-close" onClick={() => setViewingIndex(null)} aria-label="Close">
-              <X />
-            </button>
-            {isOwnPhoto(viewingPhoto) && (
-              <button
-                type="button"
-                className="album-lightbox-delete"
-                onClick={() => requestDelete(viewingPhoto)}
-                disabled={deletingId === viewingPhoto.id}
-                aria-label="Delete your photo"
-              >
-                <Trash2 size={16} />
+            <div className="album-lightbox-header">
+              {isOwnPhoto(viewingPhoto) ? (
+                <button
+                  type="button"
+                  className="album-lightbox-delete"
+                  onClick={() => requestDelete(viewingPhoto)}
+                  disabled={deletingId === viewingPhoto.id}
+                  aria-label="Delete your photo"
+                >
+                  <Trash2 size={16} />
+                </button>
+              ) : (
+                <span />
+              )}
+              <button type="button" className="album-lightbox-close" onClick={() => setViewingIndex(null)} aria-label="Close">
+                <X />
               </button>
-            )}
-            {filteredPhotos.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  className="album-lightbox-nav album-lightbox-nav--prev"
-                  onClick={showPrevPhoto}
-                  aria-label="Previous photo"
-                >
-                  <ChevronLeft />
-                </button>
-                <button
-                  type="button"
-                  className="album-lightbox-nav album-lightbox-nav--next"
-                  onClick={showNextPhoto}
-                  aria-label="Next photo"
-                >
-                  <ChevronRight />
-                </button>
-              </>
-            )}
-            <img
-              src={viewingPhoto.imageUrl}
-              alt={`Photo by ${viewingPhoto.uploaderName}`}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              style={{
-                transform: `translateX(${swipeOffset}px)`,
-                transition: isSwiping ? 'none' : 'transform 0.2s ease',
-                opacity: isSwiping ? Math.max(1 - Math.abs(swipeOffset) / 300, 0.5) : 1,
-                touchAction: 'pan-y',
-              }}
-            />
+            </div>
+            <div className="album-lightbox-media">
+              {filteredPhotos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="album-lightbox-nav album-lightbox-nav--prev"
+                    onClick={showPrevPhoto}
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft />
+                  </button>
+                  <button
+                    type="button"
+                    className="album-lightbox-nav album-lightbox-nav--next"
+                    onClick={showNextPhoto}
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight />
+                  </button>
+                </>
+              )}
+              <img
+                src={viewingPhoto.imageUrl}
+                alt={`Photo by ${viewingPhoto.uploaderName}`}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                style={{
+                  transform: `translateX(${swipeOffset}px)`,
+                  transition: isSwiping ? 'none' : 'transform 0.2s ease',
+                  opacity: isSwiping ? Math.max(1 - Math.abs(swipeOffset) / 300, 0.5) : 1,
+                  touchAction: 'pan-y',
+                }}
+              />
+            </div>
             <p>
               {viewingPhoto.uploaderName}
               {!hasNoTable(viewingPhoto) && ` · Table ${viewingPhoto.tableNumber}`}

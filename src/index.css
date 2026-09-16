@@ -1288,23 +1288,38 @@ a {
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   animation: popIn 0.25s ease;
 }
 
+.album-lightbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.album-lightbox-media {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .album-lightbox img {
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 65vh;
   border-radius: 10px;
   display: block;
   margin: 0 auto 10px;
 }
 
 .album-lightbox-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
   border: none;
   background: var(--bg);
   border-radius: 50%;
@@ -1313,12 +1328,10 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .album-lightbox-delete {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   border: none;
   background: rgba(198, 91, 78, 0.9);
   color: white;
@@ -1328,6 +1341,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .album-lightbox-delete:disabled {
@@ -1348,6 +1362,7 @@ a {
   align-items: center;
   justify-content: center;
   transition: transform 0.15s ease, background-color 0.15s ease;
+  z-index: 1;
 }
 
 .album-lightbox-nav:hover {
