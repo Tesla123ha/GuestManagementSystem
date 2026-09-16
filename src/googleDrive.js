@@ -59,13 +59,31 @@ export async function uploadPhotoToDrive(file, uploaderName) {
   const base64Data = await fileToBase64(file);
   const extension = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')) : '';
   const fileName = `${toSafeFileName(uploaderName)}-${Date.now()}${extension}`;
-  const result = await callScript({
-    action: 'upload',
-    fileName,
-    mimeType: file.type,
-    base64Data,
-  });
-  return { imageUrl: result.url, fileId: result.fileId };
+  try {
+    const result = await callScript({
+      action: 'upload',
+      fileName,
+      mimeType: file.type,
+      base64Data,
+    });
+    return { imageUrl: result.url, fileId: result.fileId };
+  } catch (err) {
+    // Every attempt above still got a broken reply, but the photo may have
+    // actually made it into Drive anyway (the same broken-reply problem
+    // callScript already retries around). Before giving up and losing the
+    // record for a photo that's really there, look for a file with the
+    // exact name just uploaded and use that instead.
+    try {
+      const files = await listPhotosFromDrive();
+      const match = files.find((f) => f.name === fileName);
+      if (match) {
+        return { imageUrl: match.url, fileId: match.fileId };
+      }
+    } catch (lookupErr) {
+      // Ignore; fall through to throwing the original error below.
+    }
+    throw err;
+  }
 }
 
 // Deletes a photo from Drive by its file ID.
