@@ -121,7 +121,7 @@ a {
 
 .page-header {
   margin-bottom: 28px;
-  animation: fadeInUp 0.35s ease both;
+  animation: fadeInUp 0.35s ease backwards;
 }
 
 .page-header p {
@@ -342,7 +342,7 @@ a {
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   padding: 22px;
-  animation: fadeInUp 0.35s ease both;
+  animation: fadeInUp 0.35s ease backwards;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -364,7 +364,7 @@ a {
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   padding: 20px 22px;
-  animation: fadeInUp 0.35s ease both;
+  animation: fadeInUp 0.35s ease backwards;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -952,7 +952,7 @@ a {
   justify-content: center;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.2s ease;
-  animation: popIn 0.3s ease both;
+  animation: popIn 0.3s ease backwards;
 }
 
 .table-shape.editable {
@@ -1022,7 +1022,7 @@ a {
   border-color: var(--gold);
   background: var(--gold-light);
   box-shadow: 0 0 0 5px rgba(212, 163, 115, 0.25);
-  animation: popIn 0.3s ease both, softPulse 2.2s ease-in-out 0.3s infinite;
+  animation: popIn 0.3s ease backwards, softPulse 2.2s ease-in-out 0.3s infinite;
 }
 
 .table-shape .table-num {
@@ -1106,7 +1106,7 @@ a {
   font-weight: 700;
   color: var(--blue);
   margin: 14px 0 4px;
-  animation: popIn 0.4s ease 0.1s both;
+  animation: popIn 0.4s ease 0.1s backwards;
 }
 
 .spinner {
@@ -1223,7 +1223,7 @@ a {
   aspect-ratio: 1 / 1;
   display: block;
   cursor: pointer;
-  animation: popIn 0.3s ease both;
+  animation: popIn 0.3s ease backwards;
 }
 
 .album-thumb:nth-child(2) { animation-delay: 0.03s; }
@@ -1438,7 +1438,7 @@ a {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   padding: 18px;
-  animation: fadeInUp 0.3s ease both;
+  animation: fadeInUp 0.3s ease backwards;
 }
 
 .message-view-text {
@@ -1463,7 +1463,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  animation: fadeInUp 0.3s ease both;
+  animation: fadeInUp 0.3s ease backwards;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
