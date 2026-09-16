@@ -97,6 +97,7 @@ function handleList() {
       fileId: file.getId(),
       name: file.getName(),
       url: viewUrlFor(file.getId()),
+      createdAt: file.getDateCreated().getTime(),
     });
   }
   return jsonResponse({ success: true, files: results });

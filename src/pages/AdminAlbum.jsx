@@ -37,10 +37,15 @@ export default function AdminAlbum() {
   }, []);
 
   // Drive photos that already have a matching database entry are skipped
-  // here, so every photo only ever shows up once.
+  // here, so every photo only ever shows up once. A photo added in roughly
+  // the last 10 seconds is also skipped for now, so a photo that's still
+  // mid-upload (waiting on a slow or retried reply) has time to get its
+  // proper name and table recorded before it shows up unlabeled.
+  const RECENT_GRACE_MS = 10000;
   const trackedFileIds = new Set(photos.map((p) => p.fileId));
   const untrackedDrivePhotos = drivePhotos
     .filter((f) => !trackedFileIds.has(f.fileId))
+    .filter((f) => !f.createdAt || Date.now() - f.createdAt > RECENT_GRACE_MS)
     .map((f) => ({
       id: f.fileId,
       fileId: f.fileId,
