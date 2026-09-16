@@ -15,7 +15,9 @@ export default function Album({ uploaderName, tableNumber }) {
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
   const touchStartX = useRef(null);
+  const swipeHintTimeoutRef = useRef(null);
   const [tableFilter, setTableFilter] = useState('all'); // all | 'unknown' | a table number as a string
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const cameraInputRef = useRef(null);
@@ -102,10 +104,12 @@ export default function Album({ uploaderName, tableNumber }) {
   }
 
   function showPrevPhoto() {
+    setShowSwipeHint(false);
     setViewingIndex((i) => (i === null ? i : (i - 1 + filteredPhotos.length) % filteredPhotos.length));
   }
 
   function showNextPhoto() {
+    setShowSwipeHint(false);
     setViewingIndex((i) => (i === null ? i : (i + 1) % filteredPhotos.length));
   }
 
@@ -116,6 +120,21 @@ export default function Album({ uploaderName, tableNumber }) {
       document.body.style.overflow = '';
     };
   }, [viewingIndex]);
+
+  // The first time a guest ever opens a photo (on this device), show a
+  // quick tip about swiping between photos, then remember not to show it
+  // again. Only worth showing if there's actually more than one photo.
+  const isViewerOpen = viewingIndex !== null;
+  useEffect(() => {
+    if (!isViewerOpen || filteredPhotos.length <= 1) return undefined;
+    if (localStorage.getItem('albumSwipeHintSeen')) return undefined;
+    localStorage.setItem('albumSwipeHintSeen', '1');
+    setShowSwipeHint(true);
+    swipeHintTimeoutRef.current = setTimeout(() => setShowSwipeHint(false), 3500);
+    return () => clearTimeout(swipeHintTimeoutRef.current);
+    // Only re-check when the viewer opens/closes, not on every swipe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isViewerOpen]);
 
   useEffect(() => {
     if (viewingIndex === null) return undefined;
@@ -135,6 +154,7 @@ export default function Album({ uploaderName, tableNumber }) {
   function handleTouchStart(e) {
     touchStartX.current = e.touches[0].clientX;
     setIsSwiping(true);
+    setShowSwipeHint(false);
   }
 
   function handleTouchMove(e) {
@@ -398,6 +418,13 @@ export default function Album({ uploaderName, tableNumber }) {
                   touchAction: 'pan-y',
                 }}
               />
+              {showSwipeHint && (
+                <div className="swipe-hint">
+                  <ChevronLeft size={16} />
+                  Swipe to see more photos
+                  <ChevronRight size={16} />
+                </div>
+              )}
             </div>
             <p>
               {viewingPhoto.uploaderName}
