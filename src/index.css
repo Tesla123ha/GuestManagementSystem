@@ -961,6 +961,18 @@ a {
   cursor: grab;
 }
 
+.table-shape .table-num {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.table-shape .table-seats {
+  font-size: 0.66rem;
+  line-height: 1.1;
+  color: var(--ink-soft);
+}
+
 @media (max-width: 600px) {
   .guest-screen {
     padding: 14px;
@@ -1026,18 +1038,6 @@ a {
   background: var(--gold-light);
   box-shadow: 0 0 0 5px rgba(212, 163, 115, 0.25);
   animation: popIn 0.3s ease backwards, softPulse 2.2s ease-in-out 0.3s infinite;
-}
-
-.table-shape .table-num {
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 700;
-  font-size: 1.3rem;
-}
-
-.table-shape .table-seats {
-  font-size: 0.66rem;
-  line-height: 1.1;
-  color: var(--ink-soft);
 }
 
 /* ---------- Guest-facing pages ---------- */
