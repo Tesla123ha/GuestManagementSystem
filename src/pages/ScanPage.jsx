@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   doc,
   collection,
@@ -113,6 +114,56 @@ export default function ScanPage() {
     ];
     return () => timers.forEach(clearTimeout);
   }, [isWaiting]);
+
+  // --- Sliding tab highlight ("gooey" pill) ---
+  // Tracks the pixel position/width of the active tab so a single pill can
+  // animate between them: it stretches to span both the old and new tab
+  // mid-flight, then settles into the new tab's exact size.
+  const tabsTrackRef = useRef(null);
+  const tabButtonRefs = useRef({});
+  const prevTabRectRef = useRef(null);
+  const [pillAnimation, setPillAnimation] = useState(null);
+
+  function measureTabRect(tabId) {
+    const btn = tabButtonRefs.current[tabId];
+    if (!btn) return null;
+    return { left: btn.offsetLeft, width: btn.offsetWidth };
+  }
+
+  function updatePill(tabId, { animate: shouldAnimate } = { animate: true }) {
+    const target = measureTabRect(tabId);
+    if (!target) return;
+    const prev = prevTabRectRef.current;
+    if (!prev || !shouldAnimate) {
+      setPillAnimation({ left: target.left, width: target.width });
+    } else {
+      const spanLeft = Math.min(prev.left, target.left);
+      const spanRight = Math.max(prev.left + prev.width, target.left + target.width);
+      setPillAnimation({
+        left: [prev.left, spanLeft, target.left],
+        width: [prev.width, spanRight - spanLeft, target.width],
+      });
+    }
+    prevTabRectRef.current = target;
+  }
+
+  // Place (or move) the pill whenever the active tab changes, and once the
+  // tabs first mount (isWaiting flips to false).
+  useEffect(() => {
+    if (isWaiting) return undefined;
+    updatePill(activeTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isWaiting]);
+
+  // Keep the pill aligned if the window is resized (no stretch, just snap).
+  useEffect(() => {
+    function handleResize() {
+      if (!isWaiting) updatePill(activeTab, { animate: false });
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isWaiting]);
 
   // Looks for a guest list entry with a matching name that already has a table
   // assigned, and if that table has an open seat, returns the seat details to
@@ -245,9 +296,21 @@ export default function ScanPage() {
 
         {!isWaiting && (
           <>
-            <div className="guest-tabs">
+            <div className="guest-tabs" ref={tabsTrackRef}>
+              {pillAnimation && (
+                <motion.div
+                  className="guest-tabs-pill"
+                  animate={pillAnimation}
+                  transition={
+                    Array.isArray(pillAnimation.left)
+                      ? { duration: 0.5, times: [0, 0.55, 1], ease: ['easeOut', 'easeInOut'] }
+                      : { duration: 0.01 }
+                  }
+                />
+              )}
               <button
                 type="button"
+                ref={(el) => { tabButtonRefs.current.table = el; }}
                 className={
                   'guest-tab' + (activeTab === 'table' ? ' active' : '') +
                   ' guest-tab-reveal' + (revealStep >= 1 ? ' guest-tab-reveal--visible' : '')
@@ -258,6 +321,7 @@ export default function ScanPage() {
               </button>
               <button
                 type="button"
+                ref={(el) => { tabButtonRefs.current.album = el; }}
                 className={
                   'guest-tab' + (activeTab === 'album' ? ' active' : '') +
                   ' guest-tab-reveal' + (revealStep >= 2 ? ' guest-tab-reveal--visible' : '')
@@ -268,6 +332,7 @@ export default function ScanPage() {
               </button>
               <button
                 type="button"
+                ref={(el) => { tabButtonRefs.current.message = el; }}
                 className={
                   'guest-tab' + (activeTab === 'message' ? ' active' : '') +
                   ' guest-tab-reveal' + (revealStep >= 3 ? ' guest-tab-reveal--visible' : '')

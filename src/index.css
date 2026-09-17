@@ -1189,25 +1189,42 @@ a {
 /* ---------- Shared Album ---------- */
 
 .guest-tabs {
+  position: relative;
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  padding: 4px;
   margin-bottom: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.guest-tabs-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  z-index: 1;
+  background: var(--blue);
+  border-radius: calc(var(--radius) - 4px);
+  box-shadow: 0 2px 8px rgba(58, 50, 43, 0.18);
 }
 
 .guest-tab {
+  position: relative;
+  z-index: 2;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   padding: 10px 12px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--white);
+  border-radius: calc(var(--radius) - 4px);
+  border: none;
+  background: transparent;
   color: var(--ink-soft);
   font-weight: 600;
   font-size: 0.9rem;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition: color 0.2s ease, transform 0.1s ease;
 }
 
 .guest-tab:active {
@@ -1215,8 +1232,6 @@ a {
 }
 
 .guest-tab.active {
-  background: var(--blue);
-  border-color: var(--blue);
   color: white;
 }
 
