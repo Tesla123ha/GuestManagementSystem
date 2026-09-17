@@ -950,6 +950,8 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 6px;
+  box-sizing: border-box;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.2s ease;
   animation: popIn 0.3s ease backwards;
@@ -1005,7 +1007,8 @@ a {
   }
 
   .table-shape .table-seats {
-    font-size: 0.68rem;
+    font-size: 0.56rem;
+    line-height: 1.1;
   }
 }
 
@@ -1032,7 +1035,8 @@ a {
 }
 
 .table-shape .table-seats {
-  font-size: 0.78rem;
+  font-size: 0.66rem;
+  line-height: 1.1;
   color: var(--ink-soft);
 }
 
