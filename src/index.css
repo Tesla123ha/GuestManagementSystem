@@ -1391,6 +1391,16 @@ a {
   text-align: left;
 }
 
+/* Inside the person-folder stack, the label sits directly over the photo
+   itself (rather than in the space below it), above the stacked-photo
+   edges and the count badge. The background is dropped since it isn't
+   needed there; a text shadow keeps the white text readable instead. */
+.album-person-tile-stack .album-thumb-name {
+  z-index: 5;
+  background: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
 .album-thumb--admin {
   cursor: pointer;
 }

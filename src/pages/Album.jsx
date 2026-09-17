@@ -375,11 +375,11 @@ export default function Album({ uploaderName, tableNumber }) {
                 {group.photos.length > 1 && (
                   <span className="album-person-tile-count">{group.photos.length}</span>
                 )}
+                <span className="album-thumb-name">
+                  {group.name}
+                  {!hasNoTable(group) && ` · Table ${group.tableNumber}`}
+                </span>
               </div>
-              <span className="album-thumb-name">
-                {group.name}
-                {!hasNoTable(group) && ` · Table ${group.tableNumber}`}
-              </span>
             </div>
           ))}
         </div>
