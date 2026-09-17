@@ -20,6 +20,7 @@ export default function Album({ uploaderName, tableNumber }) {
   const swipeHintTimeoutRef = useRef(null);
   const [tableFilter, setTableFilter] = useState('all'); // all | 'unknown' | a table number as a string
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [openFolder, setOpenFolder] = useState(null); // the grouping key of the person's folder currently open
   const cameraInputRef = useRef(null);
   const filesInputRef = useRef(null);
 
@@ -94,7 +95,36 @@ export default function Album({ uploaderName, tableNumber }) {
     if (tableFilter === 'unknown') return hasNoTable(p);
     return String(p.tableNumber) === tableFilter;
   });
-  const viewingPhoto = viewingIndex !== null ? filteredPhotos[viewingIndex] : null;
+
+  // Group photos by uploader so the album shows one "folder" per person
+  // instead of every photo at once. Groups are ordered by whoever has the
+  // most recent photo first, since filteredPhotos is already newest-first.
+  const folderGroups = [];
+  const folderGroupsByKey = new Map();
+  filteredPhotos.forEach((photo) => {
+    const key = (photo.uploaderName || 'A guest').trim().toLowerCase();
+    if (!folderGroupsByKey.has(key)) {
+      const group = { key, name: photo.uploaderName || 'A guest', photos: [] };
+      folderGroupsByKey.set(key, group);
+      folderGroups.push(group);
+    }
+    folderGroupsByKey.get(key).photos.push(photo);
+  });
+  const openFolderGroup = openFolder ? folderGroupsByKey.get(openFolder) : null;
+  // The photo list currently being browsed/viewed: only ever a single
+  // person's photos, since the lightbox opens from inside their folder.
+  const activePhotos = openFolderGroup ? openFolderGroup.photos : [];
+  const viewingPhoto = viewingIndex !== null ? activePhotos[viewingIndex] : null;
+
+  // If the person whose folder is open ends up with no photos left (their
+  // last one was deleted, or the table filter changed), back out of the
+  // folder view automatically instead of showing an empty screen.
+  useEffect(() => {
+    if (openFolder && !openFolderGroup) {
+      setOpenFolder(null);
+      setViewingIndex(null);
+    }
+  });
 
   // A guest can only delete a photo that's tracked in the database and
   // whose stored uploader name matches their own name from check-in.
@@ -105,12 +135,12 @@ export default function Album({ uploaderName, tableNumber }) {
 
   function showPrevPhoto() {
     setShowSwipeHint(false);
-    setViewingIndex((i) => (i === null ? i : (i - 1 + filteredPhotos.length) % filteredPhotos.length));
+    setViewingIndex((i) => (i === null ? i : (i - 1 + activePhotos.length) % activePhotos.length));
   }
 
   function showNextPhoto() {
     setShowSwipeHint(false);
-    setViewingIndex((i) => (i === null ? i : (i + 1) % filteredPhotos.length));
+    setViewingIndex((i) => (i === null ? i : (i + 1) % activePhotos.length));
   }
 
   useEffect(() => {
@@ -126,7 +156,7 @@ export default function Album({ uploaderName, tableNumber }) {
   // again. Only worth showing if there's actually more than one photo.
   const isViewerOpen = viewingIndex !== null;
   useEffect(() => {
-    if (!isViewerOpen || filteredPhotos.length <= 1) return undefined;
+    if (!isViewerOpen || activePhotos.length <= 1) return undefined;
     if (localStorage.getItem('albumSwipeHintSeen')) return undefined;
     localStorage.setItem('albumSwipeHintSeen', '1');
     setShowSwipeHint(true);
@@ -145,7 +175,7 @@ export default function Album({ uploaderName, tableNumber }) {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewingIndex, filteredPhotos.length]);
+  }, [viewingIndex, activePhotos.length]);
 
   // Lets a guest swipe left/right on the photo itself to move between
   // photos, the same way a phone's own photo gallery works.
@@ -313,6 +343,7 @@ export default function Album({ uploaderName, tableNumber }) {
                   onClick={() => {
                     setTableFilter(opt.value);
                     setFilterModalOpen(false);
+                    setOpenFolder(null);
                   }}
                 >
                   {opt.label}
@@ -329,37 +360,62 @@ export default function Album({ uploaderName, tableNumber }) {
         <div className="empty-state">No photos yet. Be the first to add one!</div>
       ) : filteredPhotos.length === 0 ? (
         <div className="empty-state">No photos for that table yet.</div>
-      ) : (
+      ) : !openFolderGroup ? (
         <div className="album-grid">
-          {filteredPhotos.map((photo, index) => (
+          {folderGroups.map((group) => (
             <div
-              key={photo.id}
-              className="album-thumb"
-              onClick={() => setViewingIndex(index)}
+              key={group.key}
+              className="album-person-tile"
+              onClick={() => setOpenFolder(group.key)}
               role="button"
               tabIndex={0}
             >
-              <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
-              <span className="album-thumb-name">
-                {photo.uploaderName}
-                {!hasNoTable(photo) && ` · Table ${photo.tableNumber}`}
-              </span>
-              {isOwnPhoto(photo) && (
-                <button
-                  type="button"
-                  className="album-thumb-delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    requestDelete(photo);
-                  }}
-                  disabled={deletingId === photo.id}
-                  aria-label="Delete your photo"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
+              <div className={'album-person-tile-stack' + (group.photos.length > 1 ? ' album-person-tile-stack--multiple' : '')}>
+                <img src={group.photos[0].imageUrl} alt={`Photos by ${group.name}`} loading="lazy" />
+                {group.photos.length > 1 && (
+                  <span className="album-person-tile-count">{group.photos.length}</span>
+                )}
+              </div>
+              <span className="album-thumb-name">{group.name}</span>
             </div>
           ))}
+        </div>
+      ) : (
+        <div>
+          <button type="button" className="album-folder-back" onClick={() => setOpenFolder(null)}>
+            <ChevronLeft size={16} /> All People
+          </button>
+          <div className="album-grid">
+            {openFolderGroup.photos.map((photo, index) => (
+              <div
+                key={photo.id}
+                className="album-thumb"
+                onClick={() => setViewingIndex(index)}
+                role="button"
+                tabIndex={0}
+              >
+                <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
+                <span className="album-thumb-name">
+                  {photo.uploaderName}
+                  {!hasNoTable(photo) && ` · Table ${photo.tableNumber}`}
+                </span>
+                {isOwnPhoto(photo) && (
+                  <button
+                    type="button"
+                    className="album-thumb-delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      requestDelete(photo);
+                    }}
+                    disabled={deletingId === photo.id}
+                    aria-label="Delete your photo"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -385,7 +441,7 @@ export default function Album({ uploaderName, tableNumber }) {
               </button>
             </div>
             <div className="album-lightbox-media">
-              {filteredPhotos.length > 1 && (
+              {activePhotos.length > 1 && (
                 <>
                   <button
                     type="button"

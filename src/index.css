@@ -1277,6 +1277,82 @@ a {
   animation: popIn 0.3s ease backwards;
 }
 
+.album-person-tile {
+  cursor: pointer;
+  animation: popIn 0.3s ease backwards;
+}
+
+.album-person-tile-stack {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  margin: 0 4px 10px;
+}
+
+.album-person-tile-stack::before,
+.album-person-tile-stack::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: var(--white);
+  border: 1px solid var(--border);
+  opacity: 0;
+}
+
+.album-person-tile-stack--multiple::before {
+  opacity: 1;
+  transform: rotate(-6deg) translateY(2px);
+  z-index: 1;
+}
+
+.album-person-tile-stack--multiple::after {
+  opacity: 1;
+  transform: rotate(4deg) translateY(3px);
+  z-index: 2;
+}
+
+.album-person-tile-stack img {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.album-person-tile-count {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 4;
+  background: rgba(58, 50, 43, 0.75);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.album-folder-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.album-folder-back:hover {
+  background: var(--bg);
+}
+
 .album-thumb:nth-child(2) { animation-delay: 0.03s; }
 .album-thumb:nth-child(3) { animation-delay: 0.06s; }
 .album-thumb:nth-child(4) { animation-delay: 0.09s; }
