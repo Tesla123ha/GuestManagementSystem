@@ -1278,6 +1278,7 @@ a {
 }
 
 .album-person-tile {
+  position: relative;
   cursor: pointer;
   animation: popIn 0.3s ease backwards;
 }
@@ -1285,7 +1286,7 @@ a {
 .album-person-tile-stack {
   position: relative;
   aspect-ratio: 1 / 1;
-  margin: 0 4px 10px;
+  margin: 0 4px;
 }
 
 .album-person-tile-stack::before,
