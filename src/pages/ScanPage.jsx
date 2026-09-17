@@ -40,7 +40,7 @@ export default function ScanPage() {
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [allCheckins, setAllCheckins] = useState([]);
-  const [activeTab, setActiveTab] = useState('table');
+  const [activeTab, setActiveTab] = useState(null);
   const [tabDirection, setTabDirection] = useState('right');
   const [revealStep, setRevealStep] = useState(0); // 0 none, 1-3 tabs one by one, 4 content
   const tabOrder = ['table', 'album', 'message'];
@@ -102,6 +102,7 @@ export default function ScanPage() {
   useEffect(() => {
     if (isWaiting) {
       setRevealStep(0);
+      setActiveTab(null);
       return undefined;
     }
     const baseDelay = 900;
@@ -110,7 +111,10 @@ export default function ScanPage() {
       setTimeout(() => setRevealStep(1), baseDelay),
       setTimeout(() => setRevealStep(2), baseDelay + stagger),
       setTimeout(() => setRevealStep(3), baseDelay + stagger * 2),
-      setTimeout(() => setRevealStep(4), baseDelay + stagger * 2 + 350),
+      setTimeout(() => {
+        setRevealStep(4);
+        setActiveTab('table');
+      }, baseDelay + stagger * 2 + 350),
     ];
     return () => timers.forEach(clearTimeout);
   }, [isWaiting]);
