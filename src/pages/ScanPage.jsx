@@ -307,7 +307,7 @@ export default function ScanPage() {
                   animate={pillAnimation}
                   transition={
                     Array.isArray(pillAnimation.left)
-                      ? { duration: 0.3, times: [0, 0.65, 1], ease: ['easeOut', 'easeInOut'] }
+                      ? { duration: 0.34, times: [0, 0.55, 1], ease: [[0.3, 0, 0.4, 1], [0.16, 1, 0.3, 1]] }
                       : { duration: 0.01 }
                   }
                 />

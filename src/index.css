@@ -86,11 +86,11 @@ a {
 }
 
 .tab-panel--right {
-  animation: slideInFromRight 0.25s ease;
+  animation: slideInFromRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 
 .tab-panel--left {
-  animation: slideInFromLeft 0.25s ease;
+  animation: slideInFromLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1206,6 +1206,7 @@ a {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  contain: layout style;
 }
 
 .guest-tabs-pill {
@@ -1216,6 +1217,7 @@ a {
   background: var(--blue);
   border-radius: calc(var(--radius) - 4px);
   box-shadow: 0 2px 8px rgba(58, 50, 43, 0.18);
+  will-change: left, width;
 }
 
 .guest-tab {
