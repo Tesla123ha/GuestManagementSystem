@@ -104,7 +104,7 @@ export default function Album({ uploaderName, tableNumber }) {
   filteredPhotos.forEach((photo) => {
     const key = (photo.uploaderName || 'A guest').trim().toLowerCase();
     if (!folderGroupsByKey.has(key)) {
-      const group = { key, name: photo.uploaderName || 'A guest', photos: [] };
+      const group = { key, name: photo.uploaderName || 'A guest', tableNumber: photo.tableNumber, photos: [] };
       folderGroupsByKey.set(key, group);
       folderGroups.push(group);
     }
@@ -376,7 +376,10 @@ export default function Album({ uploaderName, tableNumber }) {
                   <span className="album-person-tile-count">{group.photos.length}</span>
                 )}
               </div>
-              <span className="album-thumb-name">{group.name}</span>
+              <span className="album-thumb-name">
+                {group.name}
+                {!hasNoTable(group) && ` · Table ${group.tableNumber}`}
+              </span>
             </div>
           ))}
         </div>

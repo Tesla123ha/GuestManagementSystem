@@ -1134,6 +1134,11 @@ a {
    show. */
 .card.guest-reveal {
   animation: none;
+  box-shadow: none;
+}
+
+.card.guest-reveal:hover {
+  box-shadow: none;
 }
 
 .line-number {
