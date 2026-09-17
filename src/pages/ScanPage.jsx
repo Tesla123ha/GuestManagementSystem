@@ -345,7 +345,7 @@ export default function ScanPage() {
 
             <div className={'card guest-reveal' + (revealStep >= 4 ? ' guest-reveal--visible' : '')}>
               <div key={activeTab} className={'tab-panel tab-panel--' + tabDirection}>
-                {activeTab === 'table' && <FloorPlan highlightCheckinId={checkin.id} embedded />}
+                {activeTab === 'table' && revealStep >= 4 && <FloorPlan highlightCheckinId={checkin.id} embedded />}
                 {activeTab === 'album' && (
                   <Album uploaderName={checkin.fullName} tableNumber={checkin.tableNumber || null} />
                 )}
