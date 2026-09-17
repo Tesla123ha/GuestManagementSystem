@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { Rows3, Columns3, Armchair } from 'lucide-react';
 import { db } from '../firebase';
@@ -308,7 +309,7 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
         </>
       )}
 
-      {selected && (
+      {selected && createPortal(
         <div className="modal-overlay" onClick={() => setSelectedTable(null)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <h3>Table #{selected.tableNumber}</h3>
@@ -327,7 +328,8 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
               <button className="btn btn-outline" onClick={() => setSelectedTable(null)}>Close</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

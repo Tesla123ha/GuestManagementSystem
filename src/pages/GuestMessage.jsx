@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   doc,
   getDoc,
@@ -189,7 +190,7 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
         </div>
       )}
 
-      {confirmingDelete && (
+      {confirmingDelete && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmingDelete(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Delete your message?</h3>
@@ -203,7 +204,8 @@ export default function GuestMessage({ uploaderName, tableNumber, checkinId }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
