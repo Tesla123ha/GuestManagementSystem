@@ -247,6 +247,7 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
               </div>
             </div>
           )}
+          <p className="floor-plan-entrance-label">Entrance</p>
         </>
       ) : (
         <>
