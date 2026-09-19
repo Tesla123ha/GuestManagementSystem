@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
-import { Rows3, Columns3, Armchair } from 'lucide-react';
+import { Rows3, Columns3, Armchair, DoorOpen, X } from 'lucide-react';
 import { db } from '../firebase';
 
 const DEFAULT_ROWS = 4;
@@ -19,6 +19,8 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
   const [draggedTableId, setDraggedTableId] = useState(null);
   const [dragOverCell, setDragOverCell] = useState(null);
   const [justPlacedId, setJustPlacedId] = useState(null);
+  const [entrancePos, setEntrancePos] = useState(null); // { row, col } | null
+  const [draggingEntrance, setDraggingEntrance] = useState(false);
 
   const autoAssignedIds = useRef(new Set());
 
@@ -45,6 +47,9 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
         setGridSize({ rows, cols });
         setRowsInput(rows);
         setColsInput(cols);
+        if (data.entranceRow !== undefined && data.entranceCol !== undefined) {
+          setEntrancePos({ row: data.entranceRow, col: data.entranceCol });
+        }
       }
     }).catch((err) => {
       console.error('Could not load floor plan settings, using the default grid size instead.', err);
@@ -120,7 +125,24 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
     await updateDoc(doc(db, 'tables', tableId), { row, col });
   }
 
+  async function saveEntrancePosition(row, col) {
+    setEntrancePos({ row, col });
+    await setDoc(doc(db, ...SETTINGS_DOC_PATH), { entranceRow: row, entranceCol: col }, { merge: true });
+  }
+
+  async function clearEntrancePosition() {
+    setEntrancePos(null);
+    await setDoc(doc(db, ...SETTINGS_DOC_PATH), { entranceRow: null, entranceCol: null }, { merge: true });
+  }
+
   function handleDrop(row, col) {
+    if (draggingEntrance) {
+      const occupied = placedTables.some((t) => t.row === row && t.col === col);
+      if (!occupied) saveEntrancePosition(row, col);
+      setDraggingEntrance(false);
+      setDragOverCell(null);
+      return;
+    }
     if (!draggedTableId) return;
     const tableId = draggedTableId;
     placeTableAt(tableId, row, col).then(() => {
@@ -163,6 +185,33 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
       >
         <div className="table-num">#{table.tableNumber}</div>
         <div className="table-seats">{occupants.length}/{table.capacity} seats</div>
+      </div>
+    );
+  }
+
+  function renderEntranceMarker({ draggable } = {}) {
+    return (
+      <div
+        className={'entrance-marker' + (draggable ? ' editable' : '') + (draggingEntrance ? ' dragging' : '')}
+        draggable={draggable}
+        onDragStart={draggable ? () => setDraggingEntrance(true) : undefined}
+        onDragEnd={draggable ? () => setDraggingEntrance(false) : undefined}
+      >
+        <DoorOpen size={16} />
+        <span>Entrance</span>
+        {draggable && (
+          <button
+            type="button"
+            className="entrance-marker-remove"
+            onClick={(e) => {
+              e.stopPropagation();
+              clearEntrancePosition();
+            }}
+            aria-label="Remove entrance marker"
+          >
+            <X size={12} />
+          </button>
+        )}
       </div>
     );
   }
@@ -218,6 +267,24 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
         </div>
       )}
 
+      {editMode && (
+        <div className="floor-plan-entrance-controls">
+          <div className="floor-plan-grid-controls-heading">
+            <span className="floor-plan-grid-controls-title">Entrance Marker</span>
+            <span className="floor-plan-grid-controls-hint">
+              {entrancePos
+                ? 'Drag the marker on the grid to move it, or tap its × to remove it.'
+                : 'Drag this onto an empty cell to mark where guests come in.'}
+            </span>
+          </div>
+          {!entrancePos && (
+            <div style={{ width: 72, flexShrink: 0 }}>
+              {renderEntranceMarker({ draggable: true })}
+            </div>
+          )}
+        </div>
+      )}
+
       {tables.length === 0 ? (
         <div className="empty-state">No tables have been set up yet. Add tables from the Tables page.</div>
       ) : isGuestView ? (
@@ -232,9 +299,14 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
             {Array.from({ length: gridSize.rows }).map((_, row) =>
               Array.from({ length: gridSize.cols }).map((_, col) => {
                 const table = placedTables.find((t) => t.row === row && t.col === col);
+                const isEntranceHere = entrancePos && entrancePos.row === row && entrancePos.col === col;
                 return (
                   <div key={`${row}-${col}`} className="floor-plan-cell">
-                    {table ? renderTableShape(table) : <span className="floor-plan-cell-dot" />}
+                    {table
+                      ? renderTableShape(table)
+                      : isEntranceHere
+                      ? renderEntranceMarker()
+                      : <span className="floor-plan-cell-dot" />}
                   </div>
                 );
               })
@@ -247,7 +319,7 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
               </div>
             </div>
           )}
-          <p className="floor-plan-entrance-label">Entrance</p>
+          {!entrancePos && <p className="floor-plan-entrance-label">Entrance</p>}
         </>
       ) : (
         <>
@@ -264,6 +336,7 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
                   Array.from({ length: gridSize.cols }).map((_, col) => {
                     const table = placedTables.find((t) => t.row === row && t.col === col);
                     const isDragOver = dragOverCell && dragOverCell.row === row && dragOverCell.col === col;
+                    const isEntranceHere = entrancePos && entrancePos.row === row && entrancePos.col === col;
                     return (
                       <div
                         key={`${row}-${col}`}
@@ -273,7 +346,11 @@ export default function FloorPlan({ highlightCheckinId, embedded }) {
                         onDragLeave={editMode ? () => setDragOverCell((c) => (c && c.row === row && c.col === col ? null : c)) : undefined}
                         onDrop={editMode ? () => handleDrop(row, col) : undefined}
                       >
-                        {table ? renderTableShape(table, { draggable: editMode }) : <span className="floor-plan-cell-dot" />}
+                        {table
+                          ? renderTableShape(table, { draggable: editMode })
+                          : isEntranceHere
+                          ? renderEntranceMarker({ draggable: editMode })
+                          : <span className="floor-plan-cell-dot" />}
                       </div>
                     );
                   })
