@@ -18,11 +18,24 @@ export default function AdminAlbum() {
   const [tableFilter, setTableFilter] = useState('all'); // all | 'unknown' | a table number as a string
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [openFolder, setOpenFolder] = useState(null); // the grouping key of the person's folder currently open
+  const [deleteToast, setDeleteToast] = useState(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   const touchStartX = useRef(null);
   const swipeHintTimeoutRef = useRef(null);
+
+  // Shows a brief confirmation of what was just deleted and clears itself
+  // after a few seconds.
+  useEffect(() => {
+    if (!deleteToast) return undefined;
+    const timer = setTimeout(() => setDeleteToast(null), 3500);
+    return () => clearTimeout(timer);
+  }, [deleteToast]);
+
+  function formatUploadedAt(photo) {
+    return photo.createdAt?.toDate ? photo.createdAt.toDate().toLocaleString() : 'Upload time unknown';
+  }
 
   useEffect(() => {
     const q = query(collection(db, 'albumPhotos'), orderBy('createdAt', 'desc'));
@@ -158,6 +171,10 @@ export default function AdminAlbum() {
           setDrivePhotos((prev) => prev.filter((f) => f.fileId !== photo.fileId));
         }
       }
+      setDeleteToast({
+        text: `${toDelete.length} photo${toDelete.length === 1 ? '' : 's'} deleted`,
+        time: new Date(),
+      });
     } finally {
       setBulkDeleting(false);
       setSelectMode(false);
@@ -253,6 +270,7 @@ export default function AdminAlbum() {
         // instead of waiting for the page to be reloaded.
         setDrivePhotos((prev) => prev.filter((f) => f.fileId !== photo.fileId));
       }
+      setDeleteToast({ text: `Photo by ${photo.uploaderName || 'a guest'} deleted`, time: new Date() });
       // If the photo being deleted is open in the preview, close it too.
       if (viewingPhoto && viewingPhoto.id === photo.id) {
         setViewingIndex(null);
@@ -499,6 +517,16 @@ export default function AdminAlbum() {
         <div className="modal-overlay" onClick={() => setConfirmDeletePhoto(null)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Delete this photo?</h3>
+            <div className="confirm-modal-preview">
+              <img src={confirmDeletePhoto.imageUrl} alt="" />
+              <div>
+                <p className="confirm-modal-preview-name">
+                  {confirmDeletePhoto.uploaderName}
+                  {!hasNoTable(confirmDeletePhoto) && ` · Table ${confirmDeletePhoto.tableNumber}`}
+                </p>
+                <p className="confirm-modal-preview-time">{formatUploadedAt(confirmDeletePhoto)}</p>
+              </div>
+            </div>
             <p>This will remove it for everyone. This cannot be undone.</p>
             <div className="confirm-modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setConfirmDeletePhoto(null)}>
@@ -517,6 +545,14 @@ export default function AdminAlbum() {
         <div className="modal-overlay" onClick={() => setConfirmBulkDelete(false)}>
           <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Delete {selectedIds.size} photo{selectedIds.size === 1 ? '' : 's'}?</h3>
+            <div className="confirm-modal-preview-grid">
+              {activePhotos.filter((p) => selectedIds.has(p.id)).slice(0, 7).map((p) => (
+                <img key={p.id} src={p.imageUrl} alt="" />
+              ))}
+              {selectedIds.size > 7 && (
+                <span className="confirm-modal-preview-more">+{selectedIds.size - 7}</span>
+              )}
+            </div>
             <p>This will remove {selectedIds.size === 1 ? 'it' : 'them'} for everyone. This cannot be undone.</p>
             <div className="confirm-modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setConfirmBulkDelete(false)}>
@@ -527,6 +563,13 @@ export default function AdminAlbum() {
               </button>
             </div>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {deleteToast && createPortal(
+        <div className="delete-toast">
+          {deleteToast.text} · {deleteToast.time.toLocaleTimeString()}
         </div>,
         document.body
       )}
