@@ -13,6 +13,10 @@ export default function Album({ uploaderName, tableNumber }) {
   const [viewingIndex, setViewingIndex] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
@@ -131,6 +135,51 @@ export default function Album({ uploaderName, tableNumber }) {
   function isOwnPhoto(photo) {
     if (!photo.trackedInDatabase || !uploaderName) return false;
     return photo.uploaderName.trim().toLowerCase() === uploaderName.trim().toLowerCase();
+  }
+
+  // Multi-select is only offered inside a guest's own folder, since they
+  // can never delete anyone else's photos anyway.
+  const isOwnFolder = Boolean(openFolderGroup && openFolderGroup.photos.length > 0 && isOwnPhoto(openFolderGroup.photos[0]));
+
+  // Leaving a folder (or opening a different one) always starts fresh,
+  // rather than carrying a stale selection into a different folder.
+  useEffect(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, [openFolder]);
+
+  function toggleSelected(photoId) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(photoId)) next.delete(photoId);
+      else next.add(photoId);
+      return next;
+    });
+  }
+
+  function selectAllInFolder() {
+    setSelectedIds(new Set(openFolderGroup ? openFolderGroup.photos.map((p) => p.id) : []));
+  }
+
+  async function confirmBulkDeleteAction() {
+    const toDelete = activePhotos.filter((p) => selectedIds.has(p.id));
+    setConfirmBulkDelete(false);
+    setBulkDeleting(true);
+    try {
+      for (const photo of toDelete) {
+        if (photo.fileId) {
+          await deletePhotoFromDrive(photo.fileId).catch(() => {});
+        }
+        await deleteDoc(doc(db, 'albumPhotos', photo.id)).catch(() => {});
+        if (viewingPhoto && viewingPhoto.id === photo.id) {
+          setViewingIndex(null);
+        }
+      }
+    } finally {
+      setBulkDeleting(false);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    }
   }
 
   function showPrevPhoto() {
@@ -385,39 +434,81 @@ export default function Album({ uploaderName, tableNumber }) {
         </div>
       ) : (
         <div>
-          <button type="button" className="album-folder-back" onClick={() => setOpenFolder(null)}>
-            <ChevronLeft size={16} /> All People
-          </button>
-          <div className="album-grid">
-            {openFolderGroup.photos.map((photo, index) => (
-              <div
-                key={photo.id}
-                className="album-thumb"
-                onClick={() => setViewingIndex(index)}
-                role="button"
-                tabIndex={0}
-              >
-                <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
-                <span className="album-thumb-name">
-                  {photo.uploaderName}
-                  {!hasNoTable(photo) && ` · Table ${photo.tableNumber}`}
-                </span>
-                {isOwnPhoto(photo) && (
+          <div className="album-folder-header">
+            <button type="button" className="album-folder-back" onClick={() => setOpenFolder(null)}>
+              <ChevronLeft size={16} /> All People
+            </button>
+            {isOwnFolder && (
+              !selectMode ? (
+                <button type="button" className="btn btn-outline" onClick={() => setSelectMode(true)}>
+                  Select
+                </button>
+              ) : (
+                <div className="album-select-actions">
+                  <button type="button" className="btn btn-outline" onClick={selectAllInFolder}>
+                    Select All
+                  </button>
                   <button
                     type="button"
-                    className="album-thumb-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      requestDelete(photo);
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setSelectMode(false);
+                      setSelectedIds(new Set());
                     }}
-                    disabled={deletingId === photo.id}
-                    aria-label="Delete your photo"
                   >
-                    <Trash2 size={16} />
+                    Cancel
                   </button>
-                )}
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    disabled={selectedIds.size === 0 || bulkDeleting}
+                    onClick={() => setConfirmBulkDelete(true)}
+                  >
+                    Delete {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+          <div className="album-grid">
+            {openFolderGroup.photos.map((photo, index) => {
+              const isSelected = selectedIds.has(photo.id);
+              return (
+                <div
+                  key={photo.id}
+                  className={'album-thumb' + (isSelected ? ' album-thumb--selected' : '')}
+                  onClick={() => (selectMode ? toggleSelected(photo.id) : setViewingIndex(index))}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <img src={photo.imageUrl} alt={`Photo by ${photo.uploaderName}`} loading="lazy" />
+                  <span className="album-thumb-name">
+                    {photo.uploaderName}
+                    {!hasNoTable(photo) && ` · Table ${photo.tableNumber}`}
+                  </span>
+                  {selectMode ? (
+                    <span className={'album-thumb-checkbox' + (isSelected ? ' album-thumb-checkbox--checked' : '')}>
+                      {isSelected && <Check size={14} />}
+                    </span>
+                  ) : (
+                    isOwnPhoto(photo) && (
+                      <button
+                        type="button"
+                        className="album-thumb-delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          requestDelete(photo);
+                        }}
+                        disabled={deletingId === photo.id}
+                        aria-label="Delete your photo"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -504,6 +595,24 @@ export default function Album({ uploaderName, tableNumber }) {
                 Cancel
               </button>
               <button type="button" className="btn btn-danger" onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {confirmBulkDelete && createPortal(
+        <div className="modal-overlay" onClick={() => setConfirmBulkDelete(false)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete {selectedIds.size} photo{selectedIds.size === 1 ? '' : 's'}?</h3>
+            <p>This will remove {selectedIds.size === 1 ? 'it' : 'them'} for everyone. This cannot be undone.</p>
+            <div className="confirm-modal-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setConfirmBulkDelete(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger" onClick={confirmBulkDeleteAction}>
                 Delete
               </button>
             </div>
